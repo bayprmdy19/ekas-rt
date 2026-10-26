@@ -294,8 +294,7 @@ class DashboardController extends Controller
                         $match->orWhere('nama_pelapor', $user->name)
                               ->orWhere('nama_pelapor', $user->username)
                               ->orWhere('nama_pelapor', 'like', '%' . $user->name . '%')
-                              ->orWhereRaw('? LIKE CONCAT("%", nama_pelapor, "%")', [$user->name])
-                              ->orWhereRaw('? LIKE CONCAT("%", nama_pelapor, "%")', [$user->username]);
+                              ->orWhere('nama_pelapor', 'like', '%' . $user->username . '%');
                     });
             });
         })->latest()->get();

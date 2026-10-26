@@ -42,6 +42,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Data Kartu Keluarga & Dokumen Warga
+     */
+    public function kartuKeluarga(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(KartuKeluarga::class);
+    }
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var array<int, string>

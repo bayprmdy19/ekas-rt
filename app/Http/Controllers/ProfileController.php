@@ -16,8 +16,16 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
+        $user = $request->user();
+        $kk = \App\Models\KartuKeluarga::where('user_id', $user->id)
+            ->orWhere('kepala_keluarga', $user->name)
+            ->first();
+        $wargaProfile = \App\Models\Warga::where('nama_lengkap', $user->name)->first();
+
         return view('profile.edit', [
-            'user' => $request->user(),
+            'user' => $user,
+            'kk' => $kk,
+            'wargaProfile' => $wargaProfile,
         ]);
     }
 

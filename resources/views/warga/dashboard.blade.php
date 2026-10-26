@@ -54,6 +54,9 @@
                     <a href="{{ route('public.dashboard') }}#layanan-warga" class="px-4 py-2.5 bg-white text-blue-700 font-bold text-xs rounded-xl shadow hover:bg-blue-50 transition">
                         + Buat Pengajuan / Aduan
                     </a>
+                    <a href="{{ route('warga.dokumen.index') }}" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl border border-white/20 transition shadow-xs">
+                        📁 Data Diri & KK
+                    </a>
                     <a href="#section-surat" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl border border-white/20 transition shadow-xs">
                         📄 Surat Saya
                     </a>

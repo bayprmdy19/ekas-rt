@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Warga extends Model
 {
@@ -17,6 +18,11 @@ class Warga extends Model
         'no_hp',
         'status_tinggal',
     ];
+
+    public function kartuKeluarga(): HasOne
+    {
+        return $this->hasOne(KartuKeluarga::class);
+    }
 
     public function iuranWargas(): HasMany
     {

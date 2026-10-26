@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IuranController;
+use App\Http\Controllers\KartuKeluargaController;
 use App\Http\Controllers\KasKeluarController;
 use App\Http\Controllers\KasMasukController;
 use App\Http\Controllers\PembayaranController;
@@ -9,6 +10,7 @@ use App\Http\Controllers\PengaduanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicDashboardController;
 use App\Http\Controllers\SuratController;
+use App\Http\Controllers\WargaDokumenController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -75,9 +77,22 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/admin/surat/{id}', [SuratController::class, 'destroy'])->name('admin.surat.destroy');
     Route::get('/admin/surat/{id}/cetak', [SuratController::class, 'cetak'])->name('admin.surat.cetak');
 
+    // Route Manajemen Data KK Admin
+    Route::get('/admin/kk', [KartuKeluargaController::class, 'index'])->name('admin.kk.index');
+    Route::post('/admin/kk', [KartuKeluargaController::class, 'store'])->name('admin.kk.store');
+    Route::get('/admin/kk/{id}', [KartuKeluargaController::class, 'show'])->name('admin.kk.show');
+    Route::put('/admin/kk/{id}', [KartuKeluargaController::class, 'update'])->name('admin.kk.update');
+    Route::patch('/admin/kk/{id}/status', [KartuKeluargaController::class, 'updateStatus'])->name('admin.kk.update-status');
+    Route::delete('/admin/kk/{id}', [KartuKeluargaController::class, 'destroy'])->name('admin.kk.destroy');
+
+    // Route Layanan Warga
     Route::get('/warga/dashboard', [DashboardController::class, 'warga'])->name('warga.dashboard');
     Route::patch('/warga/pengaduan/{id}/rating', [PengaduanController::class, 'updateRating'])->name('warga.pengaduan.rating');
     Route::get('/warga/surat/{id}/download', [DashboardController::class, 'downloadSurat'])->name('warga.surat.download');
+
+    // Route Kelengkapan Dokumen & Data Diri Warga
+    Route::get('/warga/dokumen', [WargaDokumenController::class, 'index'])->name('warga.dokumen.index');
+    Route::post('/warga/dokumen', [WargaDokumenController::class, 'store'])->name('warga.dokumen.store');
 });
 
 // Route Manajemen Profil Admin (Bawaan Laravel Breeze)

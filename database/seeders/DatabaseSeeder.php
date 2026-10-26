@@ -383,5 +383,56 @@ class DatabaseSeeder extends Seeder
                 ],
             ]);
         }
+
+        // 10. Data Kartu Keluarga & Dokumen Warga
+        $existingKK = DB::table('kartu_keluargas')->count();
+        if ($existingKK === 0) {
+            $userBudi = DB::table('users')->where('username', 'budi_santoso')->first();
+            $wargaBudi = DB::table('wargas')->where('nama_lengkap', 'Budi Santoso')->first();
+            $wargaSiti = DB::table('wargas')->where('nama_lengkap', 'Siti Rahma')->first();
+
+            DB::table('kartu_keluargas')->insert([
+                [
+                    'user_id' => $userBudi?->id,
+                    'warga_id' => $wargaBudi?->id,
+                    'nomor_kk' => '3201234567890001',
+                    'kepala_keluarga' => 'Budi Santoso',
+                    'nik_kepala_keluarga' => '3201234567890001',
+                    'nomor_rumah' => 'Blok A No. 12',
+                    'rt' => '01',
+                    'rw' => '01',
+                    'no_hp' => '081234567890',
+                    'jumlah_anggota' => 3,
+                    'foto_kk' => 'dokumen_kk/sample_kk.svg',
+                    'foto_ktp' => 'dokumen_kk/sample_ktp.svg',
+                    'foto_bpjs' => 'dokumen_kk/sample_bpjs.svg',
+                    'foto_lainnya' => null,
+                    'status_verifikasi' => 'terverifikasi',
+                    'catatan_admin' => 'Dokumen kependudukan lengkap dan valid sesuai arsip RT 01.',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+                [
+                    'user_id' => null,
+                    'warga_id' => $wargaSiti?->id,
+                    'nomor_kk' => '3201234567890002',
+                    'kepala_keluarga' => 'Siti Rahma',
+                    'nik_kepala_keluarga' => '3201234567890002',
+                    'nomor_rumah' => 'Blok B No. 05',
+                    'rt' => '01',
+                    'rw' => '01',
+                    'no_hp' => '085678901234',
+                    'jumlah_anggota' => 4,
+                    'foto_kk' => 'dokumen_kk/sample_kk.svg',
+                    'foto_ktp' => null,
+                    'foto_bpjs' => null,
+                    'foto_lainnya' => null,
+                    'status_verifikasi' => 'menunggu',
+                    'catatan_admin' => 'Menunggu unggahan foto KTP dan BPJS untuk verifikasi berkas.',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ],
+            ]);
+        }
     }
 }

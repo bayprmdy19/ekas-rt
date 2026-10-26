@@ -41,7 +41,11 @@
 
                     <x-slot name="content">
                         <x-dropdown-link :href="route('profile.edit')">
-                            {{ __('Profile') }}
+                            {{ __('Kelola Profile') }}
+                        </x-dropdown-link>
+
+                        <x-dropdown-link :href="route('warga.dokumen.index')">
+                            {{ __('Lengkapi Data Diri & Dokumen KK') }}
                         </x-dropdown-link>
 
                         <!-- Authentication -->
@@ -87,7 +91,11 @@
 
             <div class="mt-3 space-y-1">
                 <x-responsive-nav-link :href="route('profile.edit')">
-                    {{ __('Profile') }}
+                    {{ __('Kelola Profile') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('warga.dokumen.index')">
+                    {{ __('Lengkapi Data Diri & Dokumen KK') }}
                 </x-responsive-nav-link>
 
                 <!-- Authentication -->
