@@ -183,7 +183,13 @@
                                     <!-- Rating Pelayanan -->
                                     <td class="px-4 py-3.5 text-center whitespace-nowrap">
                                         @if(strtolower($item->status) === 'selesai')
-                                            @if($item->rating)
+                                            @php
+                                                $selesaiIso = $item->selesai_at ? $item->selesai_at->toIso8601String() : ($item->updated_at ? $item->updated_at->toIso8601String() : null);
+                                                $hasDbRating = !empty($item->rating);
+                                            @endphp
+
+                                            @if($hasDbRating)
+                                                <!-- Sudah memiliki rating tersimpan di database -->
                                                 <div class="flex flex-col items-center">
                                                     <div class="flex items-center text-amber-400 text-xs">
                                                         @for($s = 1; $s <= 5; $s++)
@@ -191,11 +197,36 @@
                                                         @endfor
                                                     </div>
                                                     <span class="text-[10px] text-slate-500 font-semibold mt-0.5">{{ $item->rating }} / 5</span>
+                                                    @if(str_contains($item->ulasan_warga ?? '', 'Otomatis'))
+                                                        <span class="text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 mt-0.5">
+                                                            ⭐ 5 Otomatis (1x24 Jam)
+                                                        </span>
+                                                    @endif
                                                 </div>
                                             @else
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 animate-pulse">
-                                                    Menunggu Penilaian Anda
-                                                </span>
+                                                <!-- Jika belum dinilai, evaluasi secara REALTIME -->
+                                                <div class="flex flex-col items-center justify-center">
+                                                    <!-- Kondisi Realtime: Belum 1x24 jam (Menunggu warga) -->
+                                                    <div x-show="!isRatingExpired('{{ $selesaiIso }}')" class="flex flex-col items-center gap-1">
+                                                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 animate-pulse">
+                                                            <span>⏱️</span>
+                                                            <span>Menunggu Penilaian Anda</span>
+                                                        </span>
+                                                        <span class="text-[10px] text-slate-500 font-mono font-semibold" 
+                                                              x-text="'Sisa: ' + (getRemainingTime('{{ $selesaiIso }}') || '0m 0d')"></span>
+                                                    </div>
+
+                                                    <!-- Kondisi Realtime: Setelah lewat 1x24 jam, LANGSUNG Bintang 5 ⭐⭐⭐⭐⭐ -->
+                                                    <div x-show="isRatingExpired('{{ $selesaiIso }}')" x-cloak class="flex flex-col items-center">
+                                                        <div class="flex items-center text-amber-400 text-sm">
+                                                            <span>★★★★★</span>
+                                                        </div>
+                                                        <span class="text-[10px] text-slate-600 font-bold mt-0.5">5 / 5</span>
+                                                        <span class="text-[9px] text-emerald-700 font-bold bg-emerald-50 border border-emerald-200 rounded-full px-2 py-0.5 mt-0.5">
+                                                            ⭐ 5 Otomatis (Selesai >24 Jam)
+                                                        </span>
+                                                    </div>
+                                                </div>
                                             @endif
                                         @else
                                             <span class="text-slate-400 text-xs italic">-</span>
@@ -205,21 +236,40 @@
                                     <!-- Tombol Aksi Beri Rating -->
                                     <td class="px-4 py-3.5 text-center whitespace-nowrap">
                                         @if(strtolower($item->status) === 'selesai')
-                                            <button type="button" 
-                                                    @click="openRatingModal({{ json_encode([
-                                                        'id' => $item->id,
-                                                        'judul' => $item->judul_laporan,
-                                                        'kategori' => $item->kategori ?: 'Layanan Umum',
-                                                        'selesai_at' => $item->selesai_at ? $item->selesai_at->translatedFormat('d M Y, H:i') : 'Baru saja',
-                                                        'current_rating' => $item->rating ?: 5,
-                                                        'current_ulasan' => $item->ulasan_warga ?: '',
-                                                    ]) }})"
-                                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl {{ $item->rating ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-2xs font-bold' }} text-xs font-semibold transition">
-                                                <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
-                                                </svg>
-                                                <span>{{ $item->rating ? 'Ubah Penilaian' : 'Beri Penilaian' }}</span>
-                                            </button>
+                                            @if($hasDbRating)
+                                                <button type="button" 
+                                                        @click="openRatingModal({{ json_encode([
+                                                            'id' => $item->id,
+                                                            'judul' => $item->judul_laporan,
+                                                            'kategori' => $item->kategori ?: 'Layanan Umum',
+                                                            'selesai_at' => $item->selesai_at ? $item->selesai_at->translatedFormat('d M Y, H:i') : 'Baru saja',
+                                                            'current_rating' => $item->rating,
+                                                            'current_ulasan' => $item->ulasan_warga ?: '',
+                                                        ]) }})"
+                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition cursor-pointer">
+                                                    <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                    </svg>
+                                                    <span>Ubah Penilaian</span>
+                                                </button>
+                                            @else
+                                                <button type="button" 
+                                                        @click="openRatingModal({{ json_encode([
+                                                            'id' => $item->id,
+                                                            'judul' => $item->judul_laporan,
+                                                            'kategori' => $item->kategori ?: 'Layanan Umum',
+                                                            'selesai_at' => $item->selesai_at ? $item->selesai_at->translatedFormat('d M Y, H:i') : 'Baru saja',
+                                                            'current_rating' => 5,
+                                                            'current_ulasan' => '',
+                                                        ]) }})"
+                                                        :class="isRatingExpired('{{ $selesaiIso }}') ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white shadow-2xs font-bold'"
+                                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer">
+                                                    <svg class="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                                    </svg>
+                                                    <span x-text="isRatingExpired('{{ $selesaiIso }}') ? 'Ubah Penilaian' : 'Beri Penilaian'">Beri Penilaian</span>
+                                                </button>
+                                            @endif
                                         @else
                                             <span class="text-xs text-slate-400 italic">Menunggu Tuntas</span>
                                         @endif
@@ -460,15 +510,47 @@
 
     </div>
 
-    <!-- Alpine.js Component Script untuk Rating Modal -->
+    <!-- Alpine.js Component Script untuk Rating Modal & Evaluasi Realtime 1x24 Jam -->
     <script>
         function wargaDashboard() {
             return {
+                nowTime: Date.now(),
                 isRatingModalOpen: false,
                 targetItem: null,
                 selectedRating: 5,
                 hoverRating: 0,
                 ulasanText: '',
+
+                init() {
+                    // Update timer realtime setiap detik agar countdown presisi dan auto-switch bintang 5
+                    setInterval(() => {
+                        this.nowTime = Date.now();
+                    }, 1000);
+                },
+
+                isRatingExpired(selesaiAt) {
+                    if (!selesaiAt) return false;
+                    const selesaiTime = new Date(selesaiAt).getTime();
+                    return (this.nowTime - selesaiTime) >= 24 * 60 * 60 * 1000;
+                },
+
+                getRemainingTime(selesaiAt) {
+                    if (!selesaiAt) return null;
+                    const selesaiTime = new Date(selesaiAt).getTime();
+                    const expiry = selesaiTime + (24 * 60 * 60 * 1000);
+                    const diff = expiry - this.nowTime;
+
+                    if (diff <= 0) return null;
+
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                    if (hours > 0) {
+                        return `${hours}j ${minutes}m ${seconds}d`;
+                    }
+                    return `${minutes}m ${seconds}d`;
+                },
 
                 openRatingModal(item) {
                     this.targetItem = item;

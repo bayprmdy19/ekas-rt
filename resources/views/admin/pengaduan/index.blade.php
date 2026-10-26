@@ -16,7 +16,7 @@
                 'status_label' => $item->status_label,
                 'rating' => $item->rating,
                 'ulasan_warga' => $item->ulasan_warga,
-                'selesai_at' => $item->selesai_at ? $item->selesai_at->format('Y-m-d H:i') : null,
+                'selesai_at' => $item->selesai_at ? $item->selesai_at->toIso8601String() : null,
                 'selesai_at_lengkap' => $item->selesai_at ? $item->selesai_at->translatedFormat('d F Y, H:i') . ' WIB' : '-',
                 'is_menunggu_rating' => $isMenunggu,
             ];
@@ -401,9 +401,15 @@
 
                                     <!-- Jika Status Selesai Tapi Belum Ada Rating (Dalam 1x24 Jam) -->
                                     <template x-if="item.status === 'selesai' && !item.rating">
-                                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                                            (Menunggu Warga)
-                                        </span>
+                                        <div class="inline-flex flex-col items-center gap-0.5">
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs">
+                                                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+                                                <span>(Menunggu Warga)</span>
+                                            </span>
+                                            <template x-if="getRemainingTime(item.selesai_at)">
+                                                <span class="text-[9px] text-slate-400 font-mono" x-text="'⏱️ Sisa ' + getRemainingTime(item.selesai_at)"></span>
+                                            </template>
+                                        </div>
                                     </template>
 
                                     <!-- Jika Belum Berstatus Selesai (Diterima / Diproses) -->
@@ -841,6 +847,7 @@
                 toastMessage: null,
                 selectedItem: null,
                 newStatus: 'diproses',
+                nowTime: Date.now(),
 
                 init() {
                     // Cek perubahan query/filter untuk mereset halaman ke 1
@@ -848,6 +855,54 @@
                     this.$watch('statusFilter', () => { this.currentPage = 1; });
                     this.$watch('categoryFilter', () => { this.currentPage = 1; });
                     this.$watch('perPage', () => { this.currentPage = 1; });
+
+                    // Evaluasi rating realtime setiap 10 detik (1x24 jam auto rating 5)
+                    this.updateRealtimeRatings();
+                    setInterval(() => {
+                        this.nowTime = Date.now();
+                        this.updateRealtimeRatings();
+                    }, 5000);
+                },
+
+                getRemainingTime(selesaiAt) {
+                    if (!selesaiAt) return null;
+                    const selesaiTime = new Date(selesaiAt).getTime();
+                    const expiry = selesaiTime + (24 * 60 * 60 * 1000);
+                    const diff = expiry - this.nowTime;
+
+                    if (diff <= 0) return null;
+
+                    const hours = Math.floor(diff / (1000 * 60 * 60));
+                    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    if (hours > 0) {
+                        return `${hours}j ${minutes}m`;
+                    }
+                    const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+                    return `${minutes}m ${seconds}d`;
+                },
+
+                updateRealtimeRatings() {
+                    const now = this.nowTime;
+                    this.items.forEach(item => {
+                        if (item.status === 'selesai' && !item.rating && item.selesai_at) {
+                            const selesaiTime = new Date(item.selesai_at).getTime();
+                            if ((now - selesaiTime) >= 24 * 60 * 60 * 1000) {
+                                // 1x24 jam telah lewat! Otomatis jadikan rating 5 secara realtime
+                                item.rating = 5;
+                                item.ulasan_warga = 'Otomatis selesai oleh sistem (Layanan tuntas)';
+                                item.is_menunggu_rating = false;
+                            }
+                        }
+                    });
+
+                    if (this.selectedItem && this.selectedItem.status === 'selesai' && !this.selectedItem.rating && this.selectedItem.selesai_at) {
+                        const selesaiTime = new Date(this.selectedItem.selesai_at).getTime();
+                        if ((now - selesaiTime) >= 24 * 60 * 60 * 1000) {
+                            this.selectedItem.rating = 5;
+                            this.selectedItem.ulasan_warga = 'Otomatis selesai oleh sistem (Layanan tuntas)';
+                            this.selectedItem.is_menunggu_rating = false;
+                        }
+                    }
                 },
 
                 get availableCategories() {

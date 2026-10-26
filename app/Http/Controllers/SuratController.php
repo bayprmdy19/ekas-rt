@@ -232,6 +232,90 @@ class SuratController extends Controller
     }
 
     /**
+     * Kirim Surat Resmi ke Pemohon & Sinkronkan ke Portal Warga
+     */
+    public function kirim(Request $request, $id)
+    {
+        if (!Auth::check() || !Auth::user()->isAdmin()) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
+
+        $surat = Administrasi::findOrFail($id);
+
+        $request->validate([
+            'no_hp' => 'nullable|string|max:25',
+            'pesan' => 'nullable|string',
+            'catatan' => 'nullable|string',
+        ]);
+
+        // Otomatis ubah status ke 'disetujui' jika sebelumnya masih menunggu
+        if ($surat->status !== 'disetujui') {
+            $surat->status = 'disetujui';
+            if (empty($surat->nomor_surat)) {
+                $surat->nomor_surat = $surat->nomor_surat_display;
+            }
+        }
+
+        $catatanKirim = 'Surat telah dikirimkan ke pemohon pada ' . Carbon::now()->translatedFormat('d F Y, H:i') . ' WIB';
+        $surat->catatan = $request->filled('catatan') ? $request->catatan : $catatanKirim;
+        $surat->save();
+
+        // Sinkronkan ke model Pengaduan agar akun pemohon di Portal Warga langsung mendapat status 'selesai' dan tombol download surat
+        $aduan = Pengaduan::where('judul_laporan', $surat->jenis_surat)
+            ->where('nomor_rumah', $surat->nomor_rumah)
+            ->first();
+
+        if ($aduan) {
+            $aduan->update([
+                'status' => 'selesai',
+                'selesai_at' => Carbon::now(),
+            ]);
+        } else {
+            Pengaduan::create([
+                'nomor_rumah' => $surat->nomor_rumah,
+                'nama_pelapor' => $surat->nama_pengaju,
+                'kategori' => 'Administrasi Surat',
+                'judul_laporan' => $surat->jenis_surat,
+                'isi_laporan' => $surat->keperluan,
+                'status' => 'selesai',
+                'selesai_at' => Carbon::now(),
+            ]);
+        }
+
+        $warga = Warga::where('nama_lengkap', $surat->nama_pengaju)
+            ->orWhere('nomor_rumah', $surat->nomor_rumah)
+            ->first();
+
+        $phone = $request->no_hp ?: ($warga?->no_hp ?: '');
+        $cleanPhone = preg_replace('/[^0-9]/', '', $phone);
+        if (str_starts_with($cleanPhone, '0')) {
+            $cleanPhone = '62' . substr($cleanPhone, 1);
+        }
+
+        $cetakUrl = route('admin.surat.cetak', $surat->id);
+        $pesanTeks = $request->pesan ?: "Yth. {$surat->nama_pengaju},\n\nPermohonan {$surat->jenis_surat} Anda (Nomor: {$surat->nomor_surat}) telah selesai diterbitkan dan disetujui oleh Pengurus RT 01.\n\nKeperluan: {$surat->keperluan}\nDokumen resmi dapat dilihat dan diunduh melalui tautan berikut:\n{$cetakUrl}\n\nTerima kasih.\nPengurus RT 01 RW 06";
+
+        $waUrl = !empty($cleanPhone) ? "https://wa.me/{$cleanPhone}?text=" . urlencode($pesanTeks) : null;
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Surat \"{$surat->jenis_surat}\" berhasil dikirim ke pemohon ({$surat->nama_pengaju}).",
+                'surat' => [
+                    'id' => $surat->id,
+                    'status' => $surat->status,
+                    'status_label' => $surat->status_label,
+                    'catatan' => $surat->catatan,
+                    'nomor_surat' => $surat->nomor_surat,
+                ],
+                'whatsapp_url' => $waUrl,
+            ]);
+        }
+
+        return redirect()->route('admin.surat.index')->with('success', "Surat \"{$surat->jenis_surat}\" berhasil dikirim ke pemohon.");
+    }
+
+    /**
      * Tampilan Cetak / Unduh Surat Resmi RT oleh Admin
      */
     public function cetak($id)

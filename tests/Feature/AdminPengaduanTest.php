@@ -183,4 +183,25 @@ class AdminPengaduanTest extends TestCase
         $this->assertEquals(5, $pengaduan->rating);
         $this->assertEquals('Terima kasih, pelayanan cepat dan lingkungan bersih kembali!', $pengaduan->ulasan_warga);
     }
+
+    public function test_realtime_auto_resolve_rating_5_when_retrieved_after_24_hours()
+    {
+        $aduan = Pengaduan::create([
+            'nomor_rumah' => 'Blok Z No. 99',
+            'nama_pelapor' => 'Warga Realtime',
+            'kategori' => 'Keamanan',
+            'judul_laporan' => 'Aduan Realtime Test 24 Jam',
+            'isi_laporan' => 'Uji real time 24 jam',
+            'status' => 'selesai',
+            'selesai_at' => Carbon::now()->subHours(25),
+            'rating' => null,
+            'ulasan_warga' => null,
+        ]);
+
+        // Saat model dimuat secara realtime (tanpa memanggil autoResolveExpiredRatings manual)
+        $fetched = Pengaduan::find($aduan->id);
+
+        $this->assertEquals(5, $fetched->rating);
+        $this->assertEquals('Otomatis selesai oleh sistem (Layanan tuntas)', $fetched->ulasan_warga);
+    }
 }

@@ -39,6 +39,9 @@ class DashboardController extends Controller
             return redirect()->route('warga.dashboard')->with('error', 'Akses ditolak: Halaman tersebut khusus untuk Pengurus RT.');
         }
 
+        // Jalankan evaluasi rating 1x24 jam secara realtime
+        Pengaduan::autoResolveExpiredRatings();
+
         $totalMasuk = KasRt::where('jenis', 'masuk')->sum('jumlah');
         $totalKeluar = KasRt::where('jenis', 'keluar')->sum('jumlah');
         $saldoKas = $totalMasuk - $totalKeluar;

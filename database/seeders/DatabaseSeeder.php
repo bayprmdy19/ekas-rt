@@ -434,5 +434,95 @@ class DatabaseSeeder extends Seeder
                 ],
             ]);
         }
+
+        // 11. Sinkronisasi Data Warga (No KK, Status Keluarga, Blok)
+        DB::table('wargas')->where('nama_lengkap', 'Budi Santoso')->update([
+            'no_kk' => '3201234567890001',
+            'status_keluarga' => 'Kepala Keluarga',
+            'blok' => 'Blok A',
+            'status_tinggal' => 'tetap',
+        ]);
+
+        DB::table('wargas')->where('nama_lengkap', 'Siti Rahma')->update([
+            'no_kk' => '3201234567890002',
+            'status_keluarga' => 'Kepala Keluarga',
+            'blok' => 'Blok B',
+            'status_tinggal' => 'tetap',
+        ]);
+
+        DB::table('wargas')->where('nama_lengkap', 'AJie')->update([
+            'no_kk' => '3201234567890004',
+            'status_keluarga' => 'Anak',
+            'blok' => 'Blok D',
+            'status_tinggal' => 'kontrak',
+        ]);
+
+        DB::table('wargas')->where('nama_lengkap', 'Arif')->update([
+            'no_kk' => '3201234567890005',
+            'status_keluarga' => 'Kepala Keluarga',
+            'blok' => 'Blok C',
+            'status_tinggal' => 'tetap',
+        ]);
+
+        // Tambah contoh anggota keluarga (Istri, Anak, Famili Lain) jika belum ada
+        $sampleWargas = [
+            [
+                'nama_lengkap' => 'Dewi Sartika',
+                'nik' => '3201234567890003',
+                'no_kk' => '3201234567890001',
+                'status_keluarga' => 'Istri',
+                'nomor_rumah' => 'Blok A No. 12',
+                'blok' => 'Blok A',
+                'no_hp' => '081234567891',
+                'status_tinggal' => 'tetap',
+            ],
+            [
+                'nama_lengkap' => 'Rizky Pratama',
+                'nik' => '3201234567890006',
+                'no_kk' => '3201234567890001',
+                'status_keluarga' => 'Anak',
+                'nomor_rumah' => 'Blok A No. 12',
+                'blok' => 'Blok A',
+                'no_hp' => '081234567892',
+                'status_tinggal' => 'tetap',
+            ],
+            [
+                'nama_lengkap' => 'Ratna Sari',
+                'nik' => '3201234567890007',
+                'no_kk' => '3201234567890005',
+                'status_keluarga' => 'Istri',
+                'nomor_rumah' => 'Blok C No. 08',
+                'blok' => 'Blok C',
+                'no_hp' => '081345678902',
+                'status_tinggal' => 'tetap',
+            ],
+            [
+                'nama_lengkap' => 'Hendra Wijaya',
+                'nik' => '3201234567890008',
+                'no_kk' => '3201234567890002',
+                'status_keluarga' => 'Famili Lain',
+                'nomor_rumah' => 'Blok B No. 05',
+                'blok' => 'Blok B',
+                'no_hp' => '085678901235',
+                'status_tinggal' => 'tetap',
+            ],
+            [
+                'nama_lengkap' => 'Maya Indah',
+                'nik' => '3201234567890009',
+                'no_kk' => '3201234567890004',
+                'status_keluarga' => 'Anak',
+                'nomor_rumah' => 'Blok D No. 02',
+                'blok' => 'Blok D',
+                'no_hp' => '081298765433',
+                'status_tinggal' => 'kontrak',
+            ],
+        ];
+
+        foreach ($sampleWargas as $w) {
+            DB::table('wargas')->updateOrInsert(
+                ['nik' => $w['nik']],
+                array_merge($w, ['created_at' => now(), 'updated_at' => now()])
+            );
+        }
     }
 }

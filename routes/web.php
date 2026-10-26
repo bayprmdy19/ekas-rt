@@ -10,6 +10,7 @@ use App\Http\Controllers\PengaduanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicDashboardController;
 use App\Http\Controllers\SuratController;
+use App\Http\Controllers\WargaController;
 use App\Http\Controllers\WargaDokumenController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,8 +34,15 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
     Route::post('/admin/kas', [DashboardController::class, 'storeKas'])->name('admin.kas.store');
-    Route::post('/admin/warga', [DashboardController::class, 'storeWarga'])->name('admin.warga.store');
     Route::post('/admin/iuran', [DashboardController::class, 'storeIuran'])->name('admin.iuran.store');
+
+    // Route Manajemen Data Warga Admin
+    Route::get('/admin/warga', [WargaController::class, 'index'])->name('admin.warga.index');
+    Route::post('/admin/warga', [WargaController::class, 'store'])->name('admin.warga.store');
+    Route::put('/admin/warga/{id}', [WargaController::class, 'update'])->name('admin.warga.update');
+    Route::delete('/admin/warga/{id}', [WargaController::class, 'destroy'])->name('admin.warga.destroy');
+    Route::get('/admin/warga/{id}/berkas', [WargaController::class, 'berkas'])->name('admin.warga.berkas');
+    Route::post('/admin/warga/{id}/berkas', [WargaController::class, 'uploadBerkas'])->name('admin.warga.upload-berkas');
 
     // Route Manajemen Iuran & Tagihan Admin
     Route::get('/admin/iuran', [IuranController::class, 'index'])->name('admin.iuran.index');
@@ -74,6 +82,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/admin/surat', [SuratController::class, 'store'])->name('admin.surat.store');
     Route::put('/admin/surat/{id}', [SuratController::class, 'update'])->name('admin.surat.update');
     Route::patch('/admin/surat/{id}/status', [SuratController::class, 'updateStatus'])->name('admin.surat.update-status');
+    Route::post('/admin/surat/{id}/kirim', [SuratController::class, 'kirim'])->name('admin.surat.kirim');
     Route::delete('/admin/surat/{id}', [SuratController::class, 'destroy'])->name('admin.surat.destroy');
     Route::get('/admin/surat/{id}/cetak', [SuratController::class, 'cetak'])->name('admin.surat.cetak');
 

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('nama_pengaju'); // Nama warga yang mengajukan surat
             $table->string('jenis_surat'); // Contoh: Surat Pengantar RT, Keterangan Domisili
             $table->text('keperluan'); // Alasan/tujuan pengajuan
-            $table->enum('status', ['pending', 'disetujui', 'ditolak'])->default('pending');
+            $table->string('status', 50)->default('menunggu');
             $table->timestamps();
         });
     }
