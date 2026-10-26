@@ -31,6 +31,39 @@ class PengaduanController extends Controller
         $totalSelesai = $pengaduans->where('status', 'selesai')->count();
         $rataRataRating = $pengaduans->whereNotNull('rating')->avg('rating') ?: 0;
 
+        if ($request->wantsJson() || $request->ajax()) {
+            $formattedPengaduans = $pengaduans->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'tanggal' => $item->created_at ? $item->created_at->format('Y-m-d') : '-',
+                    'tanggal_lengkap' => $item->created_at ? $item->created_at->translatedFormat('d F Y, H:i') . ' WIB' : '-',
+                    'nama_warga' => $item->nama_pelapor ?: 'Anonim',
+                    'nomor_rumah' => $item->nomor_rumah ?: '-',
+                    'kategori' => $item->kategori ?: 'Layanan Umum',
+                    'judul' => $item->judul_laporan,
+                    'isi' => $item->isi_laporan,
+                    'foto_url' => $item->foto ? asset('storage/' . $item->foto) : null,
+                    'status' => strtolower($item->status),
+                    'status_label' => $item->status_label,
+                    'rating' => $item->rating,
+                    'ulasan_warga' => $item->ulasan_warga,
+                    'selesai_at' => $item->selesai_at ? $item->selesai_at->toIso8601String() : null,
+                    'selesai_at_lengkap' => $item->selesai_at ? $item->selesai_at->translatedFormat('d F Y, H:i') . ' WIB' : '-',
+                    'is_menunggu_rating' => $item->isMenungguRatingWarga(),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'pengaduans' => $formattedPengaduans,
+                'totalAduan' => $totalAduan,
+                'totalDiterima' => $totalDiterima,
+                'totalDiproses' => $totalDiproses,
+                'totalSelesai' => $totalSelesai,
+                'rataRataRating' => round($rataRataRating, 1),
+            ]);
+        }
+
         return view('admin.pengaduan.index', compact(
             'pengaduans',
             'totalAduan',

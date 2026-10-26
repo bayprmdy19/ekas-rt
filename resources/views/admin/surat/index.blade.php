@@ -1098,6 +1098,29 @@
                 isKirimModalOpen: false,
                 selectedItem: null,
 
+                init() {
+                    // Polling real-time sinkronisasi pengajuan surat baru setiap 4 detik
+                    setInterval(() => {
+                        // Jangan timpa array jika modal sedang aktif terbuka
+                        if (this.isAddModalOpen || this.isEditModalOpen || this.isStatusModalOpen || this.isDeleteModalOpen) return;
+
+                        fetch('{{ route('admin.surat.index') }}', {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.success && res.surats) {
+                                if (res.surats.length > this.surats.length) {
+                                    this.toastMessage = '📄 Ada permohonan surat baru yang masuk!';
+                                    setTimeout(() => { this.toastMessage = null; }, 5000);
+                                }
+                                this.surats = res.surats;
+                            }
+                        })
+                        .catch(() => {});
+                    }, 4000);
+                },
+
                 // Forms
                 formAdd: {
                     nama_pengaju: '',
@@ -1475,6 +1498,17 @@
                     } finally {
                         this.isSubmitting = false;
                     }
+                },
+
+                countByStatus(status) {
+                    if (!this.surats) return 0;
+                    if (status === 'menunggu') {
+                        return this.surats.filter(s => ['menunggu', 'pending'].includes((s.status || '').toLowerCase())).length;
+                    }
+                    if (status === 'disetujui') {
+                        return this.surats.filter(s => ['disetujui', 'selesai'].includes((s.status || '').toLowerCase())).length;
+                    }
+                    return this.surats.filter(s => (s.status || '').toLowerCase() === status.toLowerCase()).length;
                 }
             };
         }

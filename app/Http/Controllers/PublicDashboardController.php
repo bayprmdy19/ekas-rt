@@ -76,7 +76,11 @@ class PublicDashboardController extends Controller
         }
 
         $previousUrl = strtok(url()->previous(), '#');
+        $successMsg = $isSurat
+            ? "Permohonan {$validated['kategori_layanan']} berhasil dikirim! Data telah masuk ke antrean verifikasi Surat Pengurus RT."
+            : "Laporan aduan lingkungan berhasil dikirim! Data telah masuk ke antrean Pengaduan Warga Pengurus RT.";
+
         return redirect()->to($previousUrl . '#layanan-warga')
-            ->with('success', 'Pengajuan formulir berhasil dikirim! Data telah masuk ke antrean pengaduan & layanan pengurus RT.');
+            ->with('success', $successMsg);
     }
 }

@@ -54,13 +54,10 @@ class DashboardController extends Controller
 
         // Metrik tambahan untuk tampilan RT/RW Digital
         $totalKK = Warga::distinct('nomor_rumah')->count('nomor_rumah') ?: 1;
-        $totalWargaAktif = $totalWarga > 0 ? $totalWarga : 2;
+        $totalWargaAktif = $totalWarga > 0 ? $totalWarga : 1;
         $pembayaranBulanIni = IuranWarga::where('status', 'lunas')->sum('jumlah');
-        if ($pembayaranBulanIni == 0) {
-            $pembayaranBulanIni = 225000;
-        }
-        $suratMenunggu = Administrasi::where('status', 'pending')->count() ?: 2;
-        $pengaduanBaru = Pengaduan::where('status', 'pending')->count() ?: 0;
+        $suratMenunggu = Administrasi::whereIn('status', ['menunggu', 'pending'])->count();
+        $pengaduanBaru = Pengaduan::whereIn('status', ['pending', 'diterima'])->where('kategori', '!=', 'Administrasi Surat')->count();
         $kegiatanMendatang = 3;
 
         $wargaListAll = Warga::orderBy('nama_lengkap')->get();
@@ -378,5 +375,55 @@ class DashboardController extends Controller
             'wargaProfile',
             'user'
         ));
+    }
+
+    /**
+     * Endpoint API JSON untuk data realtime statistik Dashboard Admin & Notifikasi Realtime
+     */
+    public function realtimeStats(Request $request)
+    {
+        if (!Auth::check() || !Auth::user()->isAdmin()) {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
+        }
+
+        // Jalankan evaluasi rating 1x24 jam
+        Pengaduan::autoResolveExpiredRatings();
+
+        $suratMenunggu = Administrasi::whereIn('status', ['menunggu', 'pending'])->count();
+        $pengaduanBaru = Pengaduan::whereIn('status', ['pending', 'diterima'])->where('kategori', '!=', 'Administrasi Surat')->count();
+        
+        $totalMasuk = KasRt::where('jenis', 'masuk')->sum('jumlah');
+        $totalKeluar = KasRt::where('jenis', 'keluar')->sum('jumlah');
+        $saldoKas = $totalMasuk - $totalKeluar;
+        $totalWarga = Warga::count();
+        $pembayaranBulanIni = IuranWarga::where('status', 'lunas')->sum('jumlah');
+
+        $latestSurat = Administrasi::latest('id')->first();
+        $latestPengaduan = Pengaduan::where('kategori', '!=', 'Administrasi Surat')->latest('id')->first();
+
+        return response()->json([
+            'success' => true,
+            'surat_menunggu' => $suratMenunggu,
+            'pengaduan_baru' => $pengaduanBaru,
+            'saldo_kas' => $saldoKas,
+            'saldo_kas_formatted' => 'Rp ' . number_format($saldoKas, 0, ',', '.'),
+            'total_warga' => $totalWarga,
+            'pembayaran_bulan_ini' => $pembayaranBulanIni,
+            'pembayaran_bulan_ini_formatted' => 'Rp ' . number_format($pembayaranBulanIni, 0, ',', '.'),
+            'latest_surat' => $latestSurat ? [
+                'id' => $latestSurat->id,
+                'jenis_surat' => $latestSurat->jenis_surat,
+                'nama_pengaju' => $latestSurat->nama_pengaju,
+                'status' => $latestSurat->status,
+                'created_at' => $latestSurat->created_at?->diffForHumans(),
+            ] : null,
+            'latest_pengaduan' => $latestPengaduan ? [
+                'id' => $latestPengaduan->id,
+                'judul' => $latestPengaduan->judul_laporan,
+                'nama_pelapor' => $latestPengaduan->nama_pelapor,
+                'status' => $latestPengaduan->status,
+                'created_at' => $latestPengaduan->created_at?->diffForHumans(),
+            ] : null,
+        ]);
     }
 }

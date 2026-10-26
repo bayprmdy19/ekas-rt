@@ -33,6 +33,7 @@ Route::post('/layanan-warga', [PublicDashboardController::class, 'storeLayanan']
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
+    Route::get('/admin/realtime-stats', [DashboardController::class, 'realtimeStats'])->name('admin.realtime-stats');
     Route::post('/admin/kas', [DashboardController::class, 'storeKas'])->name('admin.kas.store');
     Route::post('/admin/iuran', [DashboardController::class, 'storeIuran'])->name('admin.iuran.store');
 

@@ -24,7 +24,24 @@
         }
     </style>
 </head>
-<body class="h-full text-slate-800 antialiased selection:bg-blue-600 selection:text-white" x-data="{ sidebarOpen: false }">
+<body class="h-full text-slate-800 antialiased selection:bg-blue-600 selection:text-white" 
+      x-data="{ 
+          sidebarOpen: false,
+          liveSuratCount: {{ \App\Models\Administrasi::whereIn('status', ['menunggu', 'pending'])->count() }},
+          livePengaduanCount: {{ \App\Models\Pengaduan::whereIn('status', ['pending', 'diterima'])->where('kategori', '!=', 'Administrasi Surat')->count() }},
+          init() {
+              setInterval(() => {
+                  fetch('{{ route('admin.realtime-stats') }}', { headers: { 'Accept': 'application/json' } })
+                      .then(r => r.json())
+                      .then(d => {
+                          if (d.success) {
+                              this.liveSuratCount = d.surat_menunggu;
+                              this.livePengaduanCount = d.pengaduan_baru;
+                          }
+                      }).catch(() => {});
+              }, 4000);
+          }
+      }">
     <div class="min-h-screen flex flex-col lg:flex-row bg-[#f8fafc]">
 
         <!-- Mobile Top Navbar (Hanya di Layar Kecil) -->
@@ -182,19 +199,25 @@
                         </span>
                         <div class="space-y-1">
                             <!-- Surat -->
-                            <a href="{{ route('admin.surat.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 {{ request()->routeIs('admin.surat*') ? 'bg-white/20 text-white font-bold shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10 font-medium' }} text-xs rounded-xl transition">
-                                <svg class="w-4 h-4 {{ request()->routeIs('admin.surat*') ? 'text-white' : 'text-blue-200' }} shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                                </svg>
-                                <span>Surat</span>
+                            <a href="{{ route('admin.surat.index') }}" class="flex items-center justify-between gap-2 px-3.5 py-2.5 {{ request()->routeIs('admin.surat*') ? 'bg-white/20 text-white font-bold shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10 font-medium' }} text-xs rounded-xl transition">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <svg class="w-4 h-4 {{ request()->routeIs('admin.surat*') ? 'text-white' : 'text-blue-200' }} shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                                    </svg>
+                                    <span>Surat</span>
+                                </div>
+                                <span x-show="liveSuratCount > 0" x-text="liveSuratCount" class="px-2 py-0.5 text-[10px] font-black rounded-full bg-amber-400 text-amber-950 shadow-xs shrink-0" style="display: none;"></span>
                             </a>
 
                             <!-- Pengaduan -->
-                            <a href="{{ route('admin.pengaduan.index') }}" class="flex items-center gap-3 px-3.5 py-2.5 {{ request()->routeIs('admin.pengaduan*') ? 'bg-white/20 text-white font-bold shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10 font-medium' }} text-xs rounded-xl transition">
-                                <svg class="w-4 h-4 {{ request()->routeIs('admin.pengaduan*') ? 'text-white' : 'text-blue-200' }} shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                                </svg>
-                                <span>Pengaduan</span>
+                            <a href="{{ route('admin.pengaduan.index') }}" class="flex items-center justify-between gap-2 px-3.5 py-2.5 {{ request()->routeIs('admin.pengaduan*') ? 'bg-white/20 text-white font-bold shadow-sm' : 'text-white/80 hover:text-white hover:bg-white/10 font-medium' }} text-xs rounded-xl transition">
+                                <div class="flex items-center gap-3 min-w-0">
+                                    <svg class="w-4 h-4 {{ request()->routeIs('admin.pengaduan*') ? 'text-white' : 'text-blue-200' }} shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                    </svg>
+                                    <span>Pengaduan</span>
+                                </div>
+                                <span x-show="livePengaduanCount > 0" x-text="livePengaduanCount" class="px-2 py-0.5 text-[10px] font-black rounded-full bg-sky-300 text-sky-950 shadow-xs shrink-0" style="display: none;"></span>
                             </a>
                         </div>
                     </div>

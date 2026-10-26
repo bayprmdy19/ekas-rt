@@ -31,6 +31,39 @@ class SuratController extends Controller
         // Data warga untuk dropdown pembuatan surat manual
         $wargaList = Warga::orderBy('nama_lengkap')->get();
 
+        if ($request->wantsJson() || $request->ajax()) {
+            $formattedSurats = $surats->map(function ($item) {
+                $warga = Warga::where('nama_lengkap', $item->nama_pengaju)->first();
+                return [
+                    'id' => $item->id,
+                    'nomor_surat' => $item->nomor_surat ?: $item->nomor_surat_display,
+                    'nama_pengaju' => $item->nama_pengaju,
+                    'nomor_rumah' => $item->nomor_rumah,
+                    'jenis_surat' => $item->jenis_surat,
+                    'keperluan' => $item->keperluan,
+                    'tanggal' => $item->created_at ? $item->created_at->format('Y-m-d') : '-',
+                    'tanggal_formatted' => $item->created_at ? $item->created_at->translatedFormat('d M Y') : '-',
+                    'status' => $item->status,
+                    'status_label' => $item->status_label,
+                    'catatan' => $item->catatan ?: '-',
+                    'cetak_url' => route('admin.surat.cetak', $item->id),
+                    'nik_pemohon' => $warga?->nik ?: '-',
+                    'no_hp_pemohon' => $warga?->no_hp ?: '',
+                    'blok_pemohon' => $warga?->blok ?: ($item->nomor_rumah ?: '-'),
+                    'status_tinggal' => $warga?->status_tinggal ?: 'tetap',
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'surats' => $formattedSurats,
+                'totalSurat' => $totalSurat,
+                'totalMenunggu' => $totalMenunggu,
+                'totalDisetujui' => $totalDisetujui,
+                'totalDitolak' => $totalDitolak,
+            ]);
+        }
+
         return view('admin.surat.index', compact(
             'surats',
             'totalSurat',

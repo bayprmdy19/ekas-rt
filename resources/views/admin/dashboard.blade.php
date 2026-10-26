@@ -2,8 +2,48 @@
     <div x-data="{ 
         tabData: 'kas',
         modalTambah: false,
-        modalTab: 'kas'
-    }" class="p-5 sm:p-7 space-y-6">
+        modalTab: 'kas',
+        suratMenunggu: {{ $suratMenunggu }},
+        pengaduanBaru: {{ $pengaduanBaru }},
+        toastNotification: null,
+        toastTimer: null,
+        showToast(message, type = 'info') {
+            this.toastNotification = { message, type };
+            if (this.toastTimer) clearTimeout(this.toastTimer);
+            this.toastTimer = setTimeout(() => { this.toastNotification = null; }, 6000);
+        },
+        init() {
+            // Polling sinkronisasi real-time setiap 3.5 detik
+            setInterval(() => {
+                fetch('{{ route('admin.realtime-stats') }}', {
+                    headers: { 'Accept': 'application/json' }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        if (data.surat_menunggu !== undefined) {
+                            if (data.surat_menunggu > this.suratMenunggu) {
+                                const pelapor = data.latest_surat?.nama_pengaju ? ` dari ${data.latest_surat.nama_pengaju}` : '';
+                                const jenis = data.latest_surat?.jenis_surat ? ` (${data.latest_surat.jenis_surat})` : '';
+                                this.showToast(`📄 Pengajuan surat baru masuk${jenis}${pelapor}!`, 'surat');
+                            }
+                            this.suratMenunggu = data.surat_menunggu;
+                        }
+
+                        if (data.pengaduan_baru !== undefined) {
+                            if (data.pengaduan_baru > this.pengaduanBaru) {
+                                const pelapor = data.latest_pengaduan?.nama_pelapor ? ` dari ${data.latest_pengaduan.nama_pelapor}` : '';
+                                const judul = data.latest_pengaduan?.judul ? ` (${data.latest_pengaduan.judul})` : '';
+                                this.showToast(`📣 Laporan aduan warga baru diterima${judul}${pelapor}!`, 'aduan');
+                            }
+                            this.pengaduanBaru = data.pengaduan_baru;
+                        }
+                    }
+                })
+                .catch(() => {});
+            }, 3500);
+        }
+    }" class="p-5 sm:p-7 space-y-6 relative">
 
         <!-- Header Dashboard -->
         <div class="flex items-center justify-between pb-1">
@@ -82,40 +122,64 @@
 
         </div>
 
-        <!-- BARIS KARTU STATISTIK 2 (2 Kartu Bawah) -->
+        <!-- BARIS KARTU STATISTIK 2 (2 Kartu Bawah: Sinkronisasi Real-Time) -->
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
             <!-- 4. Surat Menunggu (Biru - Opacity 70%) -->
-            <div class="text-white rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[115px]" style="background-color: rgba(29, 78, 216, 0.70);">
-                <div class="absolute -right-3 -bottom-3 w-24 h-24 bg-white/15 rounded-full blur-xs pointer-events-none"></div>
+            <a href="{{ route('admin.surat.index') }}" 
+               class="text-white rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[115px] hover:opacity-95 transition group" 
+               style="background-color: rgba(29, 78, 216, 0.70);">
+                <div class="absolute -right-3 -bottom-3 w-24 h-24 bg-white/15 rounded-full blur-xs pointer-events-none group-hover:scale-110 transition duration-300"></div>
                 <div class="relative z-10">
-                    <svg class="w-6 h-6 text-white/95 mb-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                    </svg>
-                    <div class="text-2xl font-black text-white leading-none">
-                        {{ $suratMenunggu }}
+                    <div class="flex items-center justify-between mb-2.5">
+                        <svg class="w-6 h-6 text-white/95" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                        </svg>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-bold text-white tracking-wide shadow-2xs">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse"></span>
+                            <span>Live Sync</span>
+                        </span>
                     </div>
-                    <div class="text-[11px] font-semibold text-white/90 mt-1">
-                        Surat Menunggu
+                    <div class="text-2xl font-black text-white leading-none flex items-baseline gap-2">
+                        <span x-text="suratMenunggu">{{ $suratMenunggu }}</span>
+                        <span class="text-xs font-normal text-white/70">berkas</span>
+                    </div>
+                    <div class="text-[11px] font-semibold text-white/90 mt-1 flex items-center justify-between">
+                        <span>Surat Menunggu</span>
+                        <span class="text-[10px] text-white/80 group-hover:translate-x-0.5 transition inline-flex items-center gap-1 font-bold">
+                            Kelola Surat &rarr;
+                        </span>
                     </div>
                 </div>
-            </div>
+            </a>
 
             <!-- 5. Pengaduan Baru (Biru - Opacity 60%) -->
-            <div class="text-white rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[115px]" style="background-color: rgba(29, 78, 216, 0.60);">
-                <div class="absolute -right-3 -bottom-3 w-24 h-24 bg-white/15 rounded-full blur-xs pointer-events-none"></div>
+            <a href="{{ route('admin.pengaduan.index') }}" 
+               class="text-white rounded-2xl p-5 shadow-sm relative overflow-hidden flex flex-col justify-between min-h-[115px] hover:opacity-95 transition group" 
+               style="background-color: rgba(29, 78, 216, 0.60);">
+                <div class="absolute -right-3 -bottom-3 w-24 h-24 bg-white/15 rounded-full blur-xs pointer-events-none group-hover:scale-110 transition duration-300"></div>
                 <div class="relative z-10">
-                    <svg class="w-6 h-6 text-white/95 mb-2.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
-                    </svg>
-                    <div class="text-2xl font-black text-white leading-none">
-                        {{ $pengaduanBaru }}
+                    <div class="flex items-center justify-between mb-2.5">
+                        <svg class="w-6 h-6 text-white/95" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                        </svg>
+                        <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-bold text-white tracking-wide shadow-2xs">
+                            <span class="w-1.5 h-1.5 rounded-full bg-sky-300 animate-pulse"></span>
+                            <span>Live Sync</span>
+                        </span>
                     </div>
-                    <div class="text-[11px] font-semibold text-white/90 mt-1">
-                        Pengaduan Baru
+                    <div class="text-2xl font-black text-white leading-none flex items-baseline gap-2">
+                        <span x-text="pengaduanBaru">{{ $pengaduanBaru }}</span>
+                        <span class="text-xs font-normal text-white/70">aduan</span>
+                    </div>
+                    <div class="text-[11px] font-semibold text-white/90 mt-1 flex items-center justify-between">
+                        <span>Pengaduan Baru</span>
+                        <span class="text-[10px] text-white/80 group-hover:translate-x-0.5 transition inline-flex items-center gap-1 font-bold">
+                            Kelola Aduan &rarr;
+                        </span>
                     </div>
                 </div>
-            </div>
+            </a>
 
         </div>
 
@@ -429,6 +493,39 @@
                 </div>
 
             </div>
+        </div>
+
+        <!-- Floating Realtime Alert Toast (Pemberitahuan Langsung Saat Ada Surat/Aduan Masuk) -->
+        <div x-show="toastNotification" 
+             x-cloak
+             x-transition:enter="transition ease-out duration-300"
+             x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+             x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+             x-transition:leave="transition ease-in duration-200"
+             x-transition:leave-start="opacity-100 translate-y-0"
+             x-transition:leave-end="opacity-0 translate-y-2"
+             class="fixed bottom-6 right-6 z-50 max-w-sm bg-slate-900/95 backdrop-blur-md text-white p-4 rounded-2xl shadow-2xl border border-white/15 flex items-center gap-3.5">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-inner"
+                 :class="toastNotification?.type === 'surat' ? 'bg-amber-500/20 text-amber-300' : 'bg-blue-500/20 text-blue-300'">
+                <template x-if="toastNotification?.type === 'surat'">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                </template>
+                <template x-if="toastNotification?.type !== 'surat'">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                    </svg>
+                </template>
+            </div>
+            <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-slate-300">Live Notifikasi Real-time</span>
+                </div>
+                <div class="text-xs font-semibold text-white mt-1 leading-snug" x-text="toastNotification?.message"></div>
+            </div>
+            <button type="button" @click="toastNotification = null" class="text-slate-400 hover:text-white font-bold text-lg p-1">&times;</button>
         </div>
 
     </div>

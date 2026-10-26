@@ -137,7 +137,7 @@
                 </div>
                 <div>
                     <span class="text-[11px] font-semibold text-slate-500 block">Total Pengaduan</span>
-                    <span class="text-lg font-black text-slate-800 tracking-tight">{{ $totalAduan }}</span>
+                    <span class="text-lg font-black text-slate-800 tracking-tight" x-text="items.length">{{ $totalAduan }}</span>
                 </div>
             </div>
 
@@ -150,7 +150,7 @@
                 </div>
                 <div>
                     <span class="text-[11px] font-semibold text-slate-500 block">Diterima (Baru)</span>
-                    <span class="text-lg font-black text-sky-600 tracking-tight">{{ $totalDiterima }}</span>
+                    <span class="text-lg font-black text-sky-600 tracking-tight" x-text="items.filter(i => ['pending', 'diterima'].includes(i.status)).length">{{ $totalDiterima }}</span>
                 </div>
             </div>
 
@@ -163,7 +163,7 @@
                 </div>
                 <div>
                     <span class="text-[11px] font-semibold text-slate-500 block">Sedang Diproses</span>
-                    <span class="text-lg font-black text-amber-600 tracking-tight">{{ $totalDiproses }}</span>
+                    <span class="text-lg font-black text-amber-600 tracking-tight" x-text="items.filter(i => i.status === 'diproses').length">{{ $totalDiproses }}</span>
                 </div>
             </div>
 
@@ -177,7 +177,7 @@
                 <div>
                     <span class="text-[11px] font-semibold text-slate-500 block">Selesai (Rating)</span>
                     <div class="flex items-center gap-1.5">
-                        <span class="text-lg font-black text-emerald-600 tracking-tight">{{ $totalSelesai }}</span>
+                        <span class="text-lg font-black text-emerald-600 tracking-tight" x-text="items.filter(i => i.status === 'selesai').length">{{ $totalSelesai }}</span>
                         @if($rataRataRating > 0)
                             <span class="text-[11px] font-bold text-amber-500 flex items-center gap-0.5">
                                 ⭐ {{ number_format($rataRataRating, 1) }}
@@ -853,6 +853,26 @@
                         this.nowTime = Date.now();
                         this.updateRealtimeRatings();
                     }, 5000);
+
+                    // Polling real-time sinkronisasi aduan baru setiap 4 detik
+                    setInterval(() => {
+                        if (this.isDetailModalOpen || this.isStatusModalOpen || this.isDeleteModalOpen) return;
+
+                        fetch('{{ route('admin.pengaduan.index') }}', {
+                            headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                        })
+                        .then(r => r.json())
+                        .then(res => {
+                            if (res.success && res.pengaduans) {
+                                if (res.pengaduans.length > this.items.length) {
+                                    this.toastMessage = '📣 Ada laporan pengaduan baru masuk dari warga!';
+                                    setTimeout(() => { this.toastMessage = null; }, 5000);
+                                }
+                                this.items = res.pengaduans;
+                            }
+                        })
+                        .catch(() => {});
+                    }, 4000);
                 },
 
                 getRemainingTime(selesaiAt) {
