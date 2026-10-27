@@ -225,21 +225,11 @@ class DashboardController extends Controller
     }
 
     /**
-     * Simpan Data Warga Baru dari Dashboard
+     * Simpan Data Warga Baru dari Dashboard (Sinkron dengan Form Registrasi Warga)
      */
     public function storeWarga(Request $request)
     {
-        $validated = $request->validate([
-            'nama_lengkap' => 'required|string|max:255',
-            'nik' => 'required|string|max:20|unique:wargas,nik',
-            'nomor_rumah' => 'required|string|max:50',
-            'no_hp' => 'nullable|string|max:20',
-            'status_tinggal' => 'required|in:tetap,kontrak,kos',
-        ]);
-
-        Warga::create($validated);
-
-        return redirect()->route('admin.dashboard')->with('success', 'Data warga berhasil ditambahkan.');
+        return app(WargaController::class)->store($request);
     }
 
     /**

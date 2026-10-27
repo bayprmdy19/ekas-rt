@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Masuk Portal - E-KAS RT</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        input::placeholder {
+            color: rgba(100, 116, 139, 0.55);
+        }
+    </style>
 </head>
 <body class="bg-slate-100 font-sans antialiased min-h-screen text-slate-800">
 
@@ -56,7 +61,7 @@
                 <div>
                     <h3 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk Portal</h3>
                     <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                        Gunakan username atau email yang telah terdaftar untuk melanjutkan.
+                        Gunakan Nomor KK atau Nomor WhatsApp yang telah terdaftar untuk melanjutkan.
                     </p>
                 </div>
 
@@ -70,12 +75,12 @@
                 <form method="POST" action="{{ route('login') }}" class="space-y-4">
                     @csrf
 
-                    <!-- Field Username / Email -->
+                    <!-- Field Nomor KK / Nomor WhatsApp -->
                     <div>
-                        <label for="login" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Username atau Email</label>
+                        <label for="login" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor KK atau Nomor WhatsApp</label>
                         <input id="login" type="text" name="login" value="{{ old('login') ?? old('email') }}" required autofocus autocomplete="username"
-                            placeholder="Contoh: admin atau nama@email.com"
-                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @if($errors->has('login') || $errors->has('email')) border-rose-500 bg-rose-50 @endif">
+                            placeholder="Contoh: 1291023912345678 atau 081234567890"
+                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @if($errors->has('login') || $errors->has('email')) border-rose-500 bg-rose-50 @endif">
                         @if ($errors->has('login'))
                             <span class="text-[11px] text-rose-500 mt-1.5 block font-medium">{{ $errors->first('login') }}</span>
                         @elseif ($errors->has('email'))

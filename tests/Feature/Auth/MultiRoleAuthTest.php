@@ -16,7 +16,39 @@ class MultiRoleAuthTest extends TestCase
         $response = $this->get('/register');
         $response->assertStatus(200);
         $response->assertSee('Daftar Akun Baru');
-        $response->assertSee('Username');
+        $response->assertSee('Nama Kepala Keluarga');
+        $response->assertSee('Nomor KK');
+        $response->assertSee('Nomor WhatsApp');
+        $response->assertSee('Contoh: Budi Santoso');
+        $response->assertSee('Contoh: 12910239123');
+    }
+
+    public function test_warga_can_register_with_nama_kepala_keluarga_nomor_kk_and_whatsapp(): void
+    {
+        $response = $this->post('/register', [
+            'name' => 'Budi Santoso',
+            'nomor_kk' => '1291023912345678',
+            'no_whatsapp' => '081234567890',
+            'password' => 'Kombinasi123',
+            'password_confirmation' => 'Kombinasi123',
+        ]);
+
+        $this->assertAuthenticated();
+        $this->assertDatabaseHas('users', [
+            'name' => 'Budi Santoso',
+            'username' => '1291023912345678',
+            'role' => 'warga',
+        ]);
+        $response->assertRedirect(route('warga.dashboard'));
+
+        // Logout lalu test login menggunakan Nomor WhatsApp
+        auth()->logout();
+        $loginWa = $this->post('/login', [
+            'login' => '081234567890',
+            'password' => 'Kombinasi123',
+        ]);
+        $this->assertAuthenticated();
+        $loginWa->assertRedirect(route('warga.dashboard'));
     }
 
     public function test_warga_can_register_with_name_username_and_password(): void

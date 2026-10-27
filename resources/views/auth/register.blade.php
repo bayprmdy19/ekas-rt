@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pendaftaran Warga Baru - E-KAS RT</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <style>
+        input::placeholder {
+            color: rgba(100, 116, 139, 0.55);
+        }
+    </style>
 </head>
 <body class="bg-slate-100 font-sans antialiased min-h-screen text-slate-800">
 
@@ -72,38 +77,40 @@
                 <form method="POST" action="{{ route('register') }}" class="space-y-4">
                     @csrf
 
-                    <!-- Nama Lengkap -->
+                    <!-- Nama Kepala Keluarga -->
                     <div>
-                        <label for="name" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Lengkap</label>
+                        <label for="name" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Kepala Keluarga</label>
                         <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus autocomplete="name"
                             placeholder="Contoh: Budi Santoso"
-                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('name') border-rose-500 bg-rose-50 @enderror">
+                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('name') border-rose-500 bg-rose-50 @enderror">
                         @error('name')
                             <span class="text-[11px] text-rose-500 mt-1.5 block font-medium">{{ $message }}</span>
                         @enderror
                     </div>
 
-                    <!-- Username -->
+                    <!-- Nomor KK -->
                     <div>
-                        <label for="username" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Username</label>
-                        <input id="username" type="text" name="username" value="{{ old('username') }}" required autocomplete="username"
-                            placeholder="Contoh: budi_santoso (tanpa spasi)"
-                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('username') border-rose-500 bg-rose-50 @enderror">
-                        @error('username')
+                        <label for="nomor_kk" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor KK</label>
+                        <input id="nomor_kk" type="text" inputmode="numeric" pattern="[0-9]{16}" minlength="16" maxlength="16"
+                            title="Nomor KK harus berjumlah tepat 16 digit angka"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)"
+                            name="nomor_kk" value="{{ old('nomor_kk') }}" required autocomplete="off"
+                            placeholder="Contoh: 12910239123"
+                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('nomor_kk') border-rose-500 bg-rose-50 @enderror">
+                        @error('nomor_kk')
                             <span class="text-[11px] text-rose-500 mt-1.5 block font-medium">{{ $message }}</span>
                         @enderror
                     </div>
 
-                    <!-- Email (Opsional) -->
+                    <!-- Nomor WhatsApp -->
                     <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <label for="email" class="block text-xs font-bold text-slate-700 uppercase">Alamat Email</label>
-                            <span class="text-[10px] text-slate-400 font-semibold uppercase">Opsional</span>
-                        </div>
-                        <input id="email" type="email" name="email" value="{{ old('email') }}" autocomplete="email"
-                            placeholder="budi@contoh.id (berguna untuk reset password)"
-                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('email') border-rose-500 bg-rose-50 @enderror">
-                        @error('email')
+                        <label for="no_whatsapp" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor WhatsApp</label>
+                        <input id="no_whatsapp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="13"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13)"
+                            name="no_whatsapp" value="{{ old('no_whatsapp') }}" required autocomplete="tel"
+                            placeholder="Contoh: 081234567890"
+                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('no_whatsapp') border-rose-500 bg-rose-50 @enderror">
+                        @error('no_whatsapp')
                             <span class="text-[11px] text-rose-500 mt-1.5 block font-medium">{{ $message }}</span>
                         @enderror
                     </div>

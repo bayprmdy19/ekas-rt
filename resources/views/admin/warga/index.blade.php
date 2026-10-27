@@ -102,7 +102,7 @@
                                    id="q" 
                                    name="q" 
                                    value="{{ $search }}"
-                                   placeholder="Cari nama, NIK, No. KK, atau nomor telepon..."
+                                   placeholder="Cari Nama Kepala Keluarga, Nomor KK (16 digit), atau No. WhatsApp..."
                                    class="w-full pl-10 pr-4 py-2.5 text-sm rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-white text-slate-800 placeholder:text-slate-400 font-medium transition" />
                         </div>
                     </div>
@@ -119,6 +119,7 @@
                             @foreach ($blokList as $b)
                                 <option value="{{ $b }}" {{ $blok === $b ? 'selected' : '' }}>{{ $b }}</option>
                             @endforeach
+                            <option value="Belum Diisi" {{ $blok === 'Belum Diisi' ? 'selected' : '' }}>Belum Diisi</option>
                         </select>
                     </div>
 
@@ -175,12 +176,12 @@
                     <thead>
                         <tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider bg-slate-50/70 border-b border-slate-100">
                             <th class="py-3.5 px-4 text-center w-12">NO</th>
-                            <th class="py-3.5 px-4">NAMA</th>
+                            <th class="py-3.5 px-4">NAMA KEPALA KELUARGA / WARGA</th>
                             <th class="py-3.5 px-4">STATUS KELUARGA</th>
                             <th class="py-3.5 px-4">NIK</th>
-                            <th class="py-3.5 px-4">NO. KK</th>
+                            <th class="py-3.5 px-4">NOMOR KK</th>
                             <th class="py-3.5 px-4">BLOK / NO. RUMAH</th>
-                            <th class="py-3.5 px-4">NO TELP</th>
+                            <th class="py-3.5 px-4">NOMOR WHATSAPP</th>
                             <th class="py-3.5 px-4 text-center">STATUS DOMISILI</th>
                             <th class="py-3.5 px-4 text-center">AKSI</th>
                         </tr>
@@ -219,21 +220,26 @@
 
                                 <!-- BLOK / NO. RUMAH -->
                                 <td class="py-3.5 px-4 whitespace-nowrap">
-                                    <div class="font-medium text-slate-800">
-                                        {{ $warga->nomor_rumah }}
-                                    </div>
-                                    @if($warga->blok)
-                                        <div class="text-[10px] text-slate-400 font-normal">
-                                            {{ $warga->blok }}
+                                    @if(!empty($warga->nomor_rumah) && $warga->nomor_rumah !== '-')
+                                        <div class="font-medium text-slate-800">
+                                            {{ $warga->nomor_rumah }}
                                         </div>
+                                        @if($warga->blok)
+                                            <div class="text-[10px] text-slate-400 font-normal">
+                                                {{ $warga->blok }}
+                                            </div>
+                                        @endif
+                                    @else
+                                        <span class="text-slate-400 italic text-[11px]">Belum dilengkapi</span>
                                     @endif
                                 </td>
 
-                                <!-- NO TELP -->
+                                <!-- NOMOR WHATSAPP -->
                                 <td class="py-3.5 px-4 whitespace-nowrap text-slate-600 font-medium">
-                                    @if($warga->no_hp)
-                                        <span class="inline-flex items-center gap-1 text-slate-700">
-                                            {{ $warga->no_hp }}
+                                    @php $noWa = $warga->no_hp ?: $warga->berkas_kk?->no_hp; @endphp
+                                    @if($noWa)
+                                        <span class="inline-flex items-center gap-1 text-slate-700 font-mono">
+                                            {{ $noWa }}
                                         </span>
                                     @else
                                         <span class="text-slate-400">-</span>
@@ -317,7 +323,7 @@
                 <div class="flex items-center justify-between pb-3 border-b border-slate-100">
                     <div>
                         <h3 class="text-base font-extrabold text-slate-900">Tambah Data Warga</h3>
-                        <p class="text-xs text-slate-500">Pendaftaran identitas kependudukan warga RT 01.</p>
+                        <p class="text-xs text-slate-500">Lengkapi informasi di bawah untuk mendaftarkan akun & data warga baru.</p>
                     </div>
                     <button type="button" @click="isAddModalOpen = false" class="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 flex items-center justify-center font-bold text-sm">
                         ✕
@@ -327,72 +333,57 @@
                 <form action="{{ route('admin.warga.store') }}" method="POST" class="space-y-4 text-xs">
                     @csrf
 
+                    <!-- Nama Kepala Keluarga -->
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Nama Lengkap <span class="text-rose-500">*</span></label>
-                        <input type="text" name="nama_lengkap" placeholder="Contoh: Budi Santoso" required 
-                               class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50" />
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Kepala Keluarga</label>
+                        <input type="text" name="nama_lengkap" value="{{ old('nama_lengkap') }}" required
+                               placeholder="Contoh: Budi Santoso"
+                               class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">NIK (16 Digit)</label>
-                            <input type="text" name="nik" placeholder="3201xxxxxxxxxxxx" maxlength="20"
-                                   class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50 font-mono" />
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">Nomor Kartu Keluarga (KK)</label>
-                            <input type="text" name="no_kk" placeholder="3201xxxxxxxxxxxx" maxlength="20"
-                                   class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50 font-mono" />
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">Status Keluarga <span class="text-rose-500">*</span></label>
-                            <select name="status_keluarga" required class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50 font-medium">
-                                <option value="Kepala Keluarga">Kepala Keluarga</option>
-                                <option value="Istri">Istri</option>
-                                <option value="Anak">Anak</option>
-                                <option value="Famili Lain">Famili Lain</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">Status Domisili <span class="text-rose-500">*</span></label>
-                            <select name="status_tinggal" required class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50 font-medium">
-                                <option value="tetap">Tetap</option>
-                                <option value="kontrak">Kontrak/Kos</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                        <div class="sm:col-span-2">
-                            <label class="block font-bold text-slate-700 mb-1">Nomor Rumah / Alamat <span class="text-rose-500">*</span></label>
-                            <input type="text" name="nomor_rumah" placeholder="Contoh: Blok A No. 12" required 
-                                   class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50" />
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-700 mb-1">Blok / Wilayah</label>
-                            <select name="blok" class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50 font-medium">
-                                <option value="">Otomatis</option>
-                                @foreach ($blokList as $b)
-                                    <option value="{{ $b }}">{{ $b }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-
+                    <!-- Nomor KK -->
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Nomor WhatsApp / HP</label>
-                        <input type="text" name="no_hp" placeholder="Contoh: 081234567890" 
-                               class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50" />
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor KK</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]{16}" minlength="16" maxlength="16"
+                               title="Nomor KK harus berjumlah tepat 16 digit angka"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)"
+                               name="no_kk" value="{{ old('no_kk') }}" required autocomplete="off"
+                               placeholder="Contoh: 12910239123"
+                               class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    </div>
+
+                    <!-- Nomor WhatsApp -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor WhatsApp</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="13"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13)"
+                               name="no_hp" value="{{ old('no_hp') }}" required autocomplete="tel"
+                               placeholder="Contoh: 081234567890"
+                               class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                    </div>
+
+                    <!-- Password -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Password</label>
+                        <input type="password" name="password" required autocomplete="new-password"
+                               placeholder="Minimal 8 karakter kombinasi huruf & angka"
+                               class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+                        <p class="text-[11px] text-slate-500 mt-1">Wajib minimal 8 karakter dan berisi gabungan huruf serta angka.</p>
+                    </div>
+
+                    <!-- Konfirmasi Password -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Konfirmasi Password</label>
+                        <input type="password" name="password_confirmation" required autocomplete="new-password"
+                               placeholder="Ketik ulang password"
+                               class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
                     </div>
 
                     <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                        <button type="button" @click="isAddModalOpen = false" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
+                        <button type="button" @click="isAddModalOpen = false" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition">
                             Batal
                         </button>
-                        <button type="submit" class="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs transition">
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-xs transition">
                             Simpan Warga
                         </button>
                     </div>
@@ -425,7 +416,7 @@
                     @method('PUT')
 
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Nama Lengkap <span class="text-rose-500">*</span></label>
+                        <label class="block font-bold text-slate-700 mb-1">Nama Kepala Keluarga / Lengkap <span class="text-rose-500">*</span></label>
                         <input type="text" name="nama_lengkap" x-model="editForm.nama_lengkap" required 
                                class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50" />
                     </div>
@@ -433,12 +424,14 @@
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
                             <label class="block font-bold text-slate-700 mb-1">NIK (16 Digit)</label>
-                            <input type="text" name="nik" x-model="editForm.nik" maxlength="20"
+                            <input type="text" name="nik" x-model="editForm.nik" maxlength="16" inputmode="numeric"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)"
                                    class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50 font-mono" />
                         </div>
                         <div>
-                            <label class="block font-bold text-slate-700 mb-1">Nomor Kartu Keluarga (KK)</label>
-                            <input type="text" name="no_kk" x-model="editForm.no_kk" maxlength="20"
+                            <label class="block font-bold text-slate-700 mb-1">Nomor KK (16 Digit)</label>
+                            <input type="text" name="no_kk" x-model="editForm.no_kk" minlength="16" maxlength="16" pattern="[0-9]{16}" inputmode="numeric"
+                                   oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)"
                                    class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50 font-mono" />
                         </div>
                     </div>
@@ -480,8 +473,9 @@
                     </div>
 
                     <div>
-                        <label class="block font-bold text-slate-700 mb-1">Nomor WhatsApp / HP</label>
-                        <input type="text" name="no_hp" x-model="editForm.no_hp" 
+                        <label class="block font-bold text-slate-700 mb-1">Nomor WhatsApp (Maks 13 Digit)</label>
+                        <input type="text" name="no_hp" x-model="editForm.no_hp" maxlength="13" pattern="[0-9]*" inputmode="numeric"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13)"
                                class="w-full text-xs rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-blue-600 bg-slate-50/50" />
                     </div>
 

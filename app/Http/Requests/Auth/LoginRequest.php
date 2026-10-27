@@ -39,8 +39,8 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'login.required_without' => 'Username atau Email wajib diisi.',
-            'email.required_without' => 'Username atau Email wajib diisi.',
+            'login.required_without' => 'Nomor KK atau Nomor WhatsApp wajib diisi.',
+            'email.required_without' => 'Nomor KK atau Nomor WhatsApp wajib diisi.',
             'password.required' => 'Password wajib diisi.',
         ];
     }
@@ -54,7 +54,7 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        $login = $this->input('login') ?: $this->input('email');
+        $login = trim((string) ($this->input('login') ?: $this->input('email')));
         $fieldType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
 
         $credentials = [
@@ -62,13 +62,78 @@ class LoginRequest extends FormRequest
             'password' => $this->input('password'),
         ];
 
-        if (! Auth::attempt($credentials, $this->boolean('remember'))) {
+        $authenticated = Auth::attempt($credentials, $this->boolean('remember'));
+
+        if (! $authenticated && $fieldType === 'username') {
+            $candidateUserIds = collect();
+
+            // Cari berdasarkan Nomor KK atau Nomor WhatsApp pada data Kartu Keluarga
+            $kks = \App\Models\KartuKeluarga::where('nomor_kk', $login)
+                ->orWhere('no_hp', $login)
+                ->get();
+
+            foreach ($kks as $kk) {
+                if ($kk->user_id) {
+                    $candidateUserIds->push($kk->user_id);
+                }
+                if ($kk->nomor_kk) {
+                    $u = \App\Models\User::where('username', $kk->nomor_kk)->first();
+                    if ($u) {
+                        $candidateUserIds->push($u->id);
+                    }
+                }
+                if ($kk->kepala_keluarga) {
+                    $u = \App\Models\User::where('name', $kk->kepala_keluarga)->first();
+                    if ($u) {
+                        $candidateUserIds->push($u->id);
+                    }
+                }
+            }
+
+            // Cari berdasarkan Nomor KK atau Nomor WhatsApp pada data Warga
+            $wargas = \App\Models\Warga::where('no_kk', $login)
+                ->orWhere('no_hp', $login)
+                ->get();
+
+            foreach ($wargas as $warga) {
+                if ($warga->no_kk) {
+                    $u = \App\Models\User::where('username', $warga->no_kk)->first();
+                    if ($u) {
+                        $candidateUserIds->push($u->id);
+                    }
+                }
+                if ($warga->nama_lengkap) {
+                    $u = \App\Models\User::where('name', $warga->nama_lengkap)->first();
+                    if ($u) {
+                        $candidateUserIds->push($u->id);
+                    }
+                }
+            }
+
+            $candidates = \App\Models\User::whereIn('id', $candidateUserIds->unique())->get();
+            foreach ($candidates as $candidate) {
+                if (\Illuminate\Support\Facades\Hash::check($this->input('password'), $candidate->password)) {
+                    Auth::login($candidate, $this->boolean('remember'));
+                    $authenticated = true;
+                    break;
+                }
+            }
+        }
+
+        if (! $authenticated && $fieldType === 'username') {
+            $authenticated = Auth::attempt([
+                'name' => $login,
+                'password' => $this->input('password'),
+            ], $this->boolean('remember'));
+        }
+
+        if (! $authenticated) {
             RateLimiter::hit($this->throttleKey());
 
             $errorField = $this->has('login') ? 'login' : 'email';
 
             throw ValidationException::withMessages([
-                $errorField => 'Username/Email atau Password yang Anda masukkan tidak sesuai.',
+                $errorField => 'Nomor KK / Nomor WhatsApp atau Password yang Anda masukkan tidak sesuai.',
             ]);
         }
 

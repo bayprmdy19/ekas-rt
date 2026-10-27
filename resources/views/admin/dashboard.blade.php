@@ -405,41 +405,49 @@
                     </form>
                 </div>
 
-                <!-- Form Warga -->
+                <!-- Form Warga (Sinkron dengan Form Registrasi Warga) -->
                 <div x-show="modalTab === 'warga'">
-                    <form action="{{ route('admin.warga.store') }}" method="POST" class="space-y-3 text-xs">
+                    <form action="{{ route('admin.warga.store') }}" method="POST" class="space-y-3.5 text-xs">
                         @csrf
                         <div>
-                            <label class="block font-semibold text-slate-700 mb-1">Nama Lengkap</label>
-                            <input type="text" name="nama_lengkap" placeholder="Nama warga" required class="w-full text-xs rounded-xl border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Kepala Keluarga</label>
+                            <input type="text" name="nama_lengkap" value="{{ old('nama_lengkap') }}" required
+                                placeholder="Contoh: Budi Santoso"
+                                class="w-full text-xs border border-slate-200 rounded-xl p-3 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block font-semibold text-slate-700 mb-1">NIK (16 Digit)</label>
-                                <input type="text" name="nik" placeholder="320xxxxxxxxxxxxx" maxlength="16" required class="w-full text-xs rounded-xl border-slate-200">
-                            </div>
-                            <div>
-                                <label class="block font-semibold text-slate-700 mb-1">Nomor Rumah</label>
-                                <input type="text" name="nomor_rumah" placeholder="Blok A No. 12" required class="w-full text-xs rounded-xl border-slate-200">
-                            </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor KK</label>
+                            <input type="text" inputmode="numeric" pattern="[0-9]{16}" minlength="16" maxlength="16"
+                                title="Nomor KK harus berjumlah tepat 16 digit angka"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)"
+                                name="no_kk" value="{{ old('no_kk') }}" required autocomplete="off"
+                                placeholder="Contoh: 12910239123"
+                                class="w-full text-xs border border-slate-200 rounded-xl p-3 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                         </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div>
-                                <label class="block font-semibold text-slate-700 mb-1">No HP</label>
-                                <input type="text" name="no_hp" placeholder="081234567890" class="w-full text-xs rounded-xl border-slate-200">
-                            </div>
-                            <div>
-                                <label class="block font-semibold text-slate-700 mb-1">Status Tinggal</label>
-                                <select name="status_tinggal" class="w-full text-xs rounded-xl border-slate-200">
-                                    <option value="tetap">Tetap</option>
-                                    <option value="kontrak">Kontrak</option>
-                                    <option value="kos">Kos</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor WhatsApp</label>
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="13"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13)"
+                                name="no_hp" value="{{ old('no_hp') }}" required autocomplete="tel"
+                                placeholder="Contoh: 081234567890"
+                                class="w-full text-xs border border-slate-200 rounded-xl p-3 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Password</label>
+                            <input type="password" name="password" required autocomplete="new-password"
+                                placeholder="Minimal 8 karakter kombinasi huruf & angka"
+                                class="w-full text-xs border border-slate-200 rounded-xl p-3 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+                            <p class="text-[11px] text-slate-500 mt-1">Wajib minimal 8 karakter dan berisi gabungan huruf serta angka.</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Konfirmasi Password</label>
+                            <input type="password" name="password_confirmation" required autocomplete="new-password"
+                                placeholder="Ketik ulang password"
+                                class="w-full text-xs border border-slate-200 rounded-xl p-3 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                         </div>
                         <div class="flex justify-end gap-2 pt-2">
-                            <button type="button" @click="modalTambah = false" class="px-4 py-2 border border-slate-200 rounded-xl">Batal</button>
-                            <button type="submit" class="px-4 py-2 bg-[#1d4ed8] text-white font-semibold rounded-xl">Simpan Warga</button>
+                            <button type="button" @click="modalTambah = false" class="px-4 py-2 border border-slate-200 rounded-xl font-semibold text-slate-600 hover:bg-slate-50">Batal</button>
+                            <button type="submit" class="px-4 py-2 bg-[#1d4ed8] hover:bg-blue-800 text-white font-bold rounded-xl shadow-xs">Simpan Warga</button>
                         </div>
                     </form>
                 </div>
