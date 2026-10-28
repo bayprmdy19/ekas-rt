@@ -39,8 +39,8 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'login.required_without' => 'Nomor KK atau Nomor WhatsApp wajib diisi.',
-            'email.required_without' => 'Nomor KK atau Nomor WhatsApp wajib diisi.',
+            'login.required_without' => 'Nomor HP, Nomor KK, atau Kredensial login wajib diisi.',
+            'email.required_without' => 'Nomor HP, Nomor KK, atau Kredensial login wajib diisi.',
             'password.required' => 'Password wajib diisi.',
         ];
     }
@@ -67,9 +67,19 @@ class LoginRequest extends FormRequest
         if (! $authenticated && $fieldType === 'username') {
             $candidateUserIds = collect();
 
-            // Cari berdasarkan Nomor KK atau Nomor WhatsApp pada data Kartu Keluarga
-            $kks = \App\Models\KartuKeluarga::where('nomor_kk', $login)
-                ->orWhere('no_hp', $login)
+            // 1. Cari langsung di tabel users berdasarkan no_hp, no_kk, atau username
+            $usersFound = \App\Models\User::where('no_hp', $login)
+                ->orWhere('no_kk', $login)
+                ->orWhere('username', $login)
+                ->get();
+
+            foreach ($usersFound as $u) {
+                $candidateUserIds->push($u->id);
+            }
+
+            // 2. Cari berdasarkan Nomor HP / WhatsApp atau Nomor KK pada data Kartu Keluarga
+            $kks = \App\Models\KartuKeluarga::where('no_hp', $login)
+                ->orWhere('nomor_kk', $login)
                 ->get();
 
             foreach ($kks as $kk) {
@@ -90,12 +100,15 @@ class LoginRequest extends FormRequest
                 }
             }
 
-            // Cari berdasarkan Nomor KK atau Nomor WhatsApp pada data Warga
-            $wargas = \App\Models\Warga::where('no_kk', $login)
-                ->orWhere('no_hp', $login)
+            // 3. Cari berdasarkan Nomor HP / WhatsApp atau Nomor KK pada data Warga
+            $wargas = \App\Models\Warga::where('no_hp', $login)
+                ->orWhere('no_kk', $login)
                 ->get();
 
             foreach ($wargas as $warga) {
+                if ($warga->user_id) {
+                    $candidateUserIds->push($warga->user_id);
+                }
                 if ($warga->no_kk) {
                     $u = \App\Models\User::where('username', $warga->no_kk)->first();
                     if ($u) {
@@ -133,7 +146,7 @@ class LoginRequest extends FormRequest
             $errorField = $this->has('login') ? 'login' : 'email';
 
             throw ValidationException::withMessages([
-                $errorField => 'Nomor KK / Nomor WhatsApp atau Password yang Anda masukkan tidak sesuai.',
+                $errorField => 'Nomor HP / Nomor KK atau Password yang Anda masukkan tidak sesuai.',
             ]);
         }
 

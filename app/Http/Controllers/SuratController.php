@@ -33,13 +33,18 @@ class SuratController extends Controller
 
         if ($request->wantsJson() || $request->ajax()) {
             $formattedSurats = $surats->map(function ($item) {
-                $warga = Warga::where('nama_lengkap', $item->nama_pengaju)->first();
+                $warga = $item->warga ?: ($item->warga_id ? null : Warga::where('nama_lengkap', $item->nama_pengaju)->first());
+                $namaPengajuDisplay = $item->warga ? $item->warga->nama_lengkap : ($item->warga_id === null ? 'Warga Telah Dihapus' : ($item->nama_pengaju ?: 'Warga Telah Dihapus'));
+
                 return [
                     'id' => $item->id,
                     'nomor_surat' => $item->nomor_surat ?: $item->nomor_surat_display,
-                    'nama_pengaju' => $item->nama_pengaju,
+                    'nama_pengaju' => $namaPengajuDisplay,
                     'nomor_rumah' => $item->nomor_rumah,
+                    'nomor_whatsapp' => $item->nomor_whatsapp ?: ($warga?->no_hp ?: '-'),
                     'jenis_surat' => $item->jenis_surat,
+                    'tujuan_surat' => $item->tujuan_surat ?: '-',
+                    'keterangan_detail' => $item->keterangan_detail ?: '-',
                     'keperluan' => $item->keperluan,
                     'tanggal' => $item->created_at ? $item->created_at->format('Y-m-d') : '-',
                     'tanggal_formatted' => $item->created_at ? $item->created_at->translatedFormat('d M Y') : '-',
@@ -48,7 +53,7 @@ class SuratController extends Controller
                     'catatan' => $item->catatan ?: '-',
                     'cetak_url' => route('admin.surat.cetak', $item->id),
                     'nik_pemohon' => $warga?->nik ?: '-',
-                    'no_hp_pemohon' => $warga?->no_hp ?: '',
+                    'no_hp_pemohon' => $item->nomor_whatsapp ?: ($warga?->no_hp ?: ''),
                     'blok_pemohon' => $warga?->blok ?: ($item->nomor_rumah ?: '-'),
                     'status_tinggal' => $warga?->status_tinggal ?: 'tetap',
                 ];
@@ -86,7 +91,10 @@ class SuratController extends Controller
         $validated = $request->validate([
             'nama_pengaju' => 'required|string|max:100',
             'nomor_rumah' => 'required|string|max:50',
+            'nomor_whatsapp' => 'nullable|string|max:20',
             'jenis_surat' => 'required|string|max:100',
+            'tujuan_surat' => 'nullable|string|max:255',
+            'keterangan_detail' => 'nullable|string',
             'keperluan' => 'required|string',
             'nomor_surat' => 'nullable|string|max:100',
             'catatan' => 'nullable|string',
@@ -95,10 +103,19 @@ class SuratController extends Controller
 
         $status = in_array($validated['status'], ['pending', 'menunggu']) ? 'menunggu' : $validated['status'];
 
+        $warga = Warga::where('nama_lengkap', $validated['nama_pengaju'])
+            ->orWhere('no_hp', $validated['nomor_whatsapp'] ?? '')
+            ->first();
+
         $surat = Administrasi::create([
+            'user_id' => $warga?->user_id,
+            'warga_id' => $warga?->id,
             'nama_pengaju' => $validated['nama_pengaju'],
             'nomor_rumah' => $validated['nomor_rumah'],
+            'nomor_whatsapp' => $validated['nomor_whatsapp'] ?? ($warga?->no_hp ?? null),
             'jenis_surat' => $validated['jenis_surat'],
+            'tujuan_surat' => $validated['tujuan_surat'] ?? null,
+            'keterangan_detail' => $validated['keterangan_detail'] ?? null,
             'keperluan' => $validated['keperluan'],
             'nomor_surat' => $validated['nomor_surat'] ?: null,
             'catatan' => $validated['catatan'] ?: '-',
@@ -113,11 +130,16 @@ class SuratController extends Controller
 
         // Sinkronkan ke tabel Pengaduan agar Portal Warga juga terhubung
         Pengaduan::create([
+            'user_id' => $warga?->user_id,
+            'warga_id' => $warga?->id,
             'nomor_rumah' => $surat->nomor_rumah,
             'nama_pelapor' => $surat->nama_pengaju,
+            'nomor_whatsapp' => $surat->nomor_whatsapp,
             'kategori' => 'Administrasi Surat',
             'judul_laporan' => $surat->jenis_surat,
             'isi_laporan' => $surat->keperluan,
+            'tujuan_surat' => $surat->tujuan_surat,
+            'keterangan_detail' => $surat->keterangan_detail,
             'status' => $status === 'disetujui' ? 'selesai' : 'diterima',
             'selesai_at' => $status === 'disetujui' ? Carbon::now() : null,
         ]);
@@ -358,14 +380,19 @@ class SuratController extends Controller
         }
 
         $surat = Administrasi::findOrFail($id);
-        $wargaProfile = Warga::where('nama_lengkap', $surat->nama_pengaju)->first();
+        $wargaProfile = $surat->warga ?: ($surat->warga_id ? null : Warga::where('nama_lengkap', $surat->nama_pengaju)->first());
+
+        $namaPelaporDisplay = $surat->warga ? $surat->warga->nama_lengkap : ($surat->warga_id === null ? 'Warga Telah Dihapus' : ($surat->nama_pengaju ?: 'Warga Telah Dihapus'));
 
         // Buat objek mock/wrapper yang kompatibel dengan template cetak.blade.php
         $pengaduan = (object)[
             'id' => $surat->id,
-            'nama_pelapor' => $surat->nama_pengaju,
+            'nama_pelapor' => $namaPelaporDisplay,
             'nomor_rumah' => $surat->nomor_rumah,
+            'nomor_whatsapp' => $surat->nomor_whatsapp,
             'judul_laporan' => $surat->jenis_surat,
+            'tujuan_surat' => $surat->tujuan_surat,
+            'keterangan_detail' => $surat->keterangan_detail,
             'isi_laporan' => $surat->keperluan,
             'selesai_at' => $surat->updated_at,
         ];
@@ -374,6 +401,7 @@ class SuratController extends Controller
         $user = Auth::user();
 
         return view('warga.surat.cetak', compact(
+            'surat',
             'pengaduan',
             'nomorSurat',
             'wargaProfile',

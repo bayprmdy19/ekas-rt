@@ -247,6 +247,12 @@
                             class="px-4 py-2 rounded-xl text-xs transition">
                         Status Iuran Warga
                     </button>
+                    <button type="button" 
+                            @click="tabData = 'surat'"
+                            :class="tabData === 'surat' ? 'bg-[#1d4ed8] text-white shadow-xs font-bold' : 'bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold'"
+                            class="px-4 py-2 rounded-xl text-xs transition">
+                        List Pengajuan Surat
+                    </button>
                 </div>
 
                 <button type="button" 
@@ -311,7 +317,7 @@
                         @forelse ($iuranWarga as $iuran)
                             <tr class="hover:bg-slate-50/70">
                                 <td class="py-3 px-3 font-semibold text-slate-800">
-                                    {{ $iuran->warga->nama_lengkap ?? 'Warga' }}
+                                    {{ $iuran->warga ? $iuran->warga->nama_lengkap : 'Warga Telah Dihapus' }}
                                     <span class="text-[10px] text-slate-400 block font-normal">Rumah: {{ $iuran->warga->nomor_rumah ?? '-' }}</span>
                                 </td>
                                 <td class="py-3 px-3 capitalize text-slate-600">{{ $iuran->jenis_iuran }}</td>
@@ -330,6 +336,71 @@
                         @empty
                             <tr>
                                 <td colspan="5" class="py-6 text-center text-slate-400">Belum ada data iuran warga.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Tabel List Pengajuan & List Surat -->
+            <div x-show="tabData === 'surat'" class="mt-4 overflow-x-auto" style="display: none;">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                            <th class="py-3 px-3">Tanggal</th>
+                            <th class="py-3 px-3">Nama Pemohon</th>
+                            <th class="py-3 px-3">WhatsApp</th>
+                            <th class="py-3 px-3">Jenis Surat</th>
+                            <th class="py-3 px-3">Keperluan / Keterangan</th>
+                            <th class="py-3 px-3 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-slate-700">
+                        @forelse ($suratTerbaru as $surat)
+                            @php
+                                $pemohonDisplay = $surat->warga ? $surat->warga->nama_lengkap : ($surat->warga_id === null ? 'Warga Telah Dihapus' : ($surat->nama_pengaju ?: 'Warga Telah Dihapus'));
+                                $waDisplay = $surat->nomor_whatsapp ?: ($surat->warga?->no_hp ?: '-');
+                            @endphp
+                            <tr class="hover:bg-slate-50/70">
+                                <td class="py-3 px-3 text-slate-500 whitespace-nowrap">{{ $surat->created_at ? $surat->created_at->format('d M Y') : '-' }}</td>
+                                <td class="py-3 px-3 font-semibold text-slate-800">
+                                    {{ $pemohonDisplay }}
+                                    <span class="text-[10px] text-slate-400 block font-normal">Rumah: {{ $surat->nomor_rumah ?? '-' }}</span>
+                                </td>
+                                <td class="py-3 px-3 whitespace-nowrap">
+                                    @if ($waDisplay !== '-')
+                                        <a href="https://wa.me/{{ preg_replace('/[^0-9]/', '', $waDisplay) }}" target="_blank" class="text-emerald-600 font-semibold hover:underline inline-flex items-center gap-1">
+                                            <span>💬</span>
+                                            <span>{{ $waDisplay }}</span>
+                                        </a>
+                                    @else
+                                        <span class="text-slate-400">-</span>
+                                    @endif
+                                </td>
+                                <td class="py-3 px-3">
+                                    <span class="font-semibold text-slate-800">{{ $surat->jenis_surat }}</span>
+                                    @if (!empty($surat->tujuan_surat))
+                                        <span class="text-[10px] bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded border border-amber-200 block mt-0.5 w-fit font-medium">
+                                            Tujuan: {{ $surat->tujuan_surat }}
+                                        </span>
+                                    @endif
+                                </td>
+                                <td class="py-3 px-3 text-slate-500 max-w-xs truncate" title="{{ $surat->keperluan }}">
+                                    {{ $surat->keterangan_detail ?: $surat->keperluan }}
+                                </td>
+                                <td class="py-3 px-3 text-center whitespace-nowrap">
+                                    @if (in_array(strtolower($surat->status), ['disetujui', 'selesai']))
+                                        <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-700 uppercase">DISETUJUI</span>
+                                    @elseif (strtolower($surat->status) === 'ditolak')
+                                        <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-rose-100 text-rose-700 uppercase">DITOLAK</span>
+                                    @else
+                                        <span class="px-2.5 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-700 uppercase">MENUNGGU</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-6 text-center text-slate-400">Belum ada pengajuan surat tercatat.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -410,24 +481,15 @@
                     <form action="{{ route('admin.warga.store') }}" method="POST" class="space-y-3.5 text-xs">
                         @csrf
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Kepala Keluarga</label>
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Lengkap</label>
                             <input type="text" name="nama_lengkap" value="{{ old('nama_lengkap') }}" required
                                 placeholder="Contoh: Budi Santoso"
                                 class="w-full text-xs border border-slate-200 rounded-xl p-3 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor KK</label>
-                            <input type="text" inputmode="numeric" pattern="[0-9]{16}" minlength="16" maxlength="16"
-                                title="Nomor KK harus berjumlah tepat 16 digit angka"
-                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)"
-                                name="no_kk" value="{{ old('no_kk') }}" required autocomplete="off"
-                                placeholder="Contoh: 12910239123"
-                                class="w-full text-xs border border-slate-200 rounded-xl p-3 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor WhatsApp</label>
-                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="13"
-                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13)"
+                            <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor HP</label>
+                            <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="15"
+                                oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 15)"
                                 name="no_hp" value="{{ old('no_hp') }}" required autocomplete="tel"
                                 placeholder="Contoh: 081234567890"
                                 class="w-full text-xs border border-slate-200 rounded-xl p-3 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition">

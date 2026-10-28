@@ -12,7 +12,10 @@ class Warga extends Model
     use HasFactory;
 
     protected $fillable = [
+        'user_id',
         'nama_lengkap',
+        'tempat_lahir',
+        'tanggal_lahir',
         'nik',
         'no_kk',
         'status_keluarga',
@@ -20,8 +23,30 @@ class Warga extends Model
         'blok',
         'no_hp',
         'status_tinggal',
+        'is_berkeluarga',
+        'memiliki_anak',
+        'file_ktp',
+        'file_kk',
+        'is_profile_complete',
         'kartu_keluarga_id',
     ];
+
+    protected $casts = [
+        'tanggal_lahir' => 'date',
+        'is_berkeluarga' => 'boolean',
+        'memiliki_anak' => 'boolean',
+        'is_profile_complete' => 'boolean',
+    ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function anaks(): HasMany
+    {
+        return $this->hasMany(WargaAnak::class, 'warga_id');
+    }
 
     public function kartuKeluarga(): BelongsTo
     {

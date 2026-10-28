@@ -25,6 +25,10 @@ class DashboardController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
+        if ($user && $user->isWarga() && !$user->is_profile_complete) {
+            return redirect()->route('warga.onboarding');
+        }
+
         return redirect()->route('warga.dashboard');
     }
 
@@ -95,7 +99,7 @@ class DashboardController extends Controller
         foreach ($iuranWarga as $iuran) {
             $kontenTerbaru->push([
                 'id' => 'iuran_' . $iuran->id,
-                'judul' => $iuran->warga->nama_lengkap ?? 'Warga RT',
+                'judul' => $iuran->warga ? $iuran->warga->nama_lengkap : 'Warga Telah Dihapus',
                 'kategori' => 'Iuran Warga',
                 'subkategori' => ucfirst($iuran->jenis_iuran),
                 'keterangan' => 'Periode ' . $iuran->bulan_tahun . ' - Rp ' . number_format($iuran->jumlah, 0, ',', '.') . ' (' . strtoupper($iuran->status) . ')',
@@ -104,8 +108,8 @@ class DashboardController extends Controller
                 'type' => 'iuran',
                 'badge' => $iuran->status == 'lunas' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600',
                 'detail' => [
-                    'Warga' => $iuran->warga->nama_lengkap ?? '-',
-                    'Rumah' => $iuran->warga->nomor_rumah ?? '-',
+                    'Warga' => $iuran->warga ? $iuran->warga->nama_lengkap : 'Warga Telah Dihapus',
+                    'Rumah' => $iuran->warga ? $iuran->warga->nomor_rumah : '-',
                     'Jenis Iuran' => ucfirst($iuran->jenis_iuran),
                     'Periode' => $iuran->bulan_tahun,
                     'Nominal' => 'Rp ' . number_format($iuran->jumlah, 0, ',', '.'),
@@ -357,7 +361,10 @@ class DashboardController extends Controller
         $bulanSekarang = $romawiBulan[(int)date('n')];
         $nomorSurat = sprintf("470 / %03d / RT.01 / %s / %s", $pengaduan->id, $bulanSekarang, date('Y'));
 
-        $wargaProfile = Warga::where('nama_lengkap', $pengaduan->nama_pelapor)->first();
+        $wargaProfile = $pengaduan->warga ?: ($pengaduan->warga_id ? null : Warga::where('nama_lengkap', $pengaduan->nama_pelapor)->first());
+        if ($pengaduan->warga_id === null && !$wargaProfile) {
+            $pengaduan->nama_pelapor = 'Warga Telah Dihapus';
+        }
 
         return view('warga.surat.cetak', compact(
             'pengaduan',

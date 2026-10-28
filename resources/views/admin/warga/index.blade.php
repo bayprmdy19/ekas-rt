@@ -333,30 +333,19 @@
                 <form action="{{ route('admin.warga.store') }}" method="POST" class="space-y-4 text-xs">
                     @csrf
 
-                    <!-- Nama Kepala Keluarga -->
+                    <!-- Nama Lengkap -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Kepala Keluarga</label>
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Lengkap</label>
                         <input type="text" name="nama_lengkap" value="{{ old('nama_lengkap') }}" required
                                placeholder="Contoh: Budi Santoso"
                                class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
                     </div>
 
-                    <!-- Nomor KK -->
+                    <!-- Nomor HP -->
                     <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor KK</label>
-                        <input type="text" inputmode="numeric" pattern="[0-9]{16}" minlength="16" maxlength="16"
-                               title="Nomor KK harus berjumlah tepat 16 digit angka"
-                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)"
-                               name="no_kk" value="{{ old('no_kk') }}" required autocomplete="off"
-                               placeholder="Contoh: 12910239123"
-                               class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
-                    </div>
-
-                    <!-- Nomor WhatsApp -->
-                    <div>
-                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor WhatsApp</label>
-                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="13"
-                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13)"
+                        <label class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor HP</label>
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="15"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 15)"
                                name="no_hp" value="{{ old('no_hp') }}" required autocomplete="tel"
                                placeholder="Contoh: 081234567890"
                                class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />

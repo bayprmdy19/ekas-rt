@@ -39,8 +39,8 @@ class PembayaranController extends Controller
             return [
                 'id' => $item->id,
                 'tanggal' => $tgl,
-                'nama_warga' => $item->warga->nama_lengkap ?? 'Warga RT',
-                'nomor_rumah' => $item->warga->nomor_rumah ?? '-',
+                'nama_warga' => $item->warga ? $item->warga->nama_lengkap : 'Warga Telah Dihapus',
+                'nomor_rumah' => $item->warga ? ($item->warga->nomor_rumah ?? '-') : '-',
                 'bln_thn' => $item->keterangan ?? $item->bulan_tahun,
                 'jenis_iuran' => $item->jenis_iuran,
                 'nominal' => (float)$item->jumlah,

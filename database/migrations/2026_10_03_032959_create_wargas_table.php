@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama_lengkap');
             $table->string('nik', 16)->unique()->nullable(); // Boleh opsional jika tidak ingin mencatat NIK
-            $table->string('nomor_rumah'); // Contoh: A-12
+            $table->string('nomor_rumah')->nullable(); // Contoh: A-12
             $table->string('no_hp')->nullable();
             $table->enum('status_tinggal', ['tetap', 'kontrak'])->default('tetap');
             $table->timestamps();

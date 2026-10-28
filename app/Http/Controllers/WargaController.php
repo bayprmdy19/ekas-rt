@@ -2,10 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Administrasi;
+use App\Models\IuranWarga;
 use App\Models\KartuKeluarga;
+use App\Models\KasRt;
+use App\Models\Pengaduan;
+use App\Models\User;
 use App\Models\Warga;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 class WargaController extends Controller
@@ -104,30 +110,25 @@ class WargaController extends Controller
      */
     public function store(Request $request)
     {
-        // Normalisasi nama field agar mendukung form registrasi baru (name/nomor_kk/no_whatsapp) maupun field tabel wargas (nama_lengkap/no_kk/no_hp)
+        // Normalisasi nama field agar mendukung form registrasi baru (name/no_hp) maupun field tabel wargas (nama_lengkap/no_hp)
         $request->merge([
             'nama_lengkap' => $request->input('nama_lengkap') ?: $request->input('name'),
-            'no_kk' => $request->input('no_kk') ?: $request->input('nomor_kk'),
             'no_hp' => $request->input('no_hp') ?: $request->input('no_whatsapp'),
         ]);
 
         $rules = [
             'nama_lengkap' => ['required', 'string', 'max:255'],
-            'no_kk' => ['required', 'string', 'digits:16'],
-            'no_hp' => ['nullable', 'string', 'regex:/^[0-9]+$/', 'max:13'],
+            'no_hp' => ['required', 'string', 'regex:/^[0-9]+$/', 'min:9', 'max:15'],
             'nik' => ['nullable', 'string', 'max:20', 'unique:wargas,nik'],
+            'no_kk' => ['nullable', 'string', 'max:20'],
             'status_keluarga' => ['nullable', 'string', 'in:Kepala Keluarga,Istri,Anak,Famili Lain'],
             'nomor_rumah' => ['nullable', 'string', 'max:100'],
             'blok' => ['nullable', 'string', 'max:50'],
             'status_tinggal' => ['nullable', 'in:tetap,kontrak,kos'],
         ];
 
-        // Jika form menyertakan input no_whatsapp / form tambah warga baru, wajibkan no_hp dan validasi password
-        if ($request->has('no_whatsapp') || $request->has('password')) {
-            $rules['no_hp'] = ['required', 'string', 'regex:/^[0-9]+$/', 'max:13'];
-        }
-
-        if ($request->filled('password') || $request->has('password_confirmation')) {
+        // Validasi password (wajib untuk form baru)
+        if ($request->has('password') || !$request->filled('nik')) {
             $rules['password'] = [
                 'required',
                 'confirmed',
@@ -136,12 +137,11 @@ class WargaController extends Controller
         }
 
         $validated = $request->validate($rules, [
-            'nama_lengkap.required' => 'Nama kepala keluarga wajib diisi.',
-            'no_kk.required' => 'Nomor KK wajib diisi.',
-            'no_kk.digits' => 'Nomor KK wajib berjumlah tepat 16 digit angka.',
-            'no_hp.required' => 'Nomor WhatsApp wajib diisi.',
-            'no_hp.regex' => 'Nomor WhatsApp hanya boleh berisi angka.',
-            'no_hp.max' => 'Nomor WhatsApp maksimal 13 digit angka.',
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'no_hp.required' => 'Nomor HP wajib diisi.',
+            'no_hp.regex' => 'Nomor HP hanya boleh berisi angka.',
+            'no_hp.min' => 'Nomor HP minimal 9 digit angka.',
+            'no_hp.max' => 'Nomor HP maksimal 15 digit angka.',
             'nik.unique' => 'NIK sudah terdaftar pada data warga lain.',
             'password.required' => 'Password wajib diisi.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
@@ -149,51 +149,56 @@ class WargaController extends Controller
             'password' => 'Password wajib berupa kombinasi huruf dan angka, minimal 8 karakter.',
         ]);
 
-        $validated['status_keluarga'] = $validated['status_keluarga'] ?? 'Kepala Keluarga';
-        $validated['nomor_rumah'] = !empty($validated['nomor_rumah']) ? $validated['nomor_rumah'] : '-';
         $statusTinggal = strtolower($validated['status_tinggal'] ?? 'tetap');
         $validated['status_tinggal'] = $statusTinggal === 'kos' ? 'kontrak' : $statusTinggal;
+        $validated['status_keluarga'] = $validated['status_keluarga'] ?? 'Kepala Keluarga';
+        $validated['nomor_rumah'] = !empty($validated['nomor_rumah']) ? $validated['nomor_rumah'] : null;
 
         // Auto deteksi blok jika tidak diisi manual
-        if (empty($validated['blok']) && preg_match('/(Blok\s+[A-Za-z0-9]+)/i', $validated['nomor_rumah'], $match)) {
+        if (empty($validated['blok']) && !empty($validated['nomor_rumah']) && preg_match('/(Blok\s+[A-Za-z0-9]+)/i', $validated['nomor_rumah'], $match)) {
             $validated['blok'] = ucwords(strtolower($match[1]));
         }
 
         // Cek apakah ada KartuKeluarga yang cocok untuk dihubungkan
+        $kartuKeluargaId = null;
         if (!empty($validated['no_kk'])) {
             $kk = KartuKeluarga::where('nomor_kk', $validated['no_kk'])->first();
             if ($kk) {
-                $validated['kartu_keluarga_id'] = $kk->id;
+                $kartuKeluargaId = $kk->id;
             }
         }
 
         $warga = Warga::create([
             'nama_lengkap' => $validated['nama_lengkap'],
             'nik' => $validated['nik'] ?? null,
-            'no_kk' => $validated['no_kk'],
+            'no_kk' => $validated['no_kk'] ?? null,
             'status_keluarga' => $validated['status_keluarga'],
             'nomor_rumah' => $validated['nomor_rumah'],
             'blok' => $validated['blok'] ?? null,
-            'no_hp' => $validated['no_hp'] ?? null,
+            'no_hp' => $validated['no_hp'],
             'status_tinggal' => $validated['status_tinggal'],
-            'kartu_keluarga_id' => $validated['kartu_keluarga_id'] ?? null,
+            'kartu_keluarga_id' => $kartuKeluargaId,
         ]);
 
-        // Sinkronisasi pembuatan akun login User jika belum ada akun dengan Nomor KK tersebut
-        if (!empty($validated['no_kk'])) {
-            $existingUser = \App\Models\User::where('username', $validated['no_kk'])->first();
-            if (!$existingUser && !empty($request->password)) {
-                $newUser = \App\Models\User::create([
-                    'name' => $validated['nama_lengkap'],
-                    'username' => $validated['no_kk'],
-                    'email' => null,
-                    'password' => \Illuminate\Support\Facades\Hash::make($request->password),
-                    'role' => 'warga',
-                ]);
+        // Sinkronisasi pembuatan akun login User
+        $noHp = $validated['no_hp'];
+        $existingUser = \App\Models\User::where('username', $noHp)
+            ->orWhere('no_hp', $noHp)
+            ->first();
 
-                if (isset($kk) && $kk && !$kk->user_id) {
-                    $kk->update(['user_id' => $newUser->id]);
-                }
+        if (!$existingUser) {
+            $password = $request->filled('password') ? $request->password : 'Warga1234';
+            $newUser = \App\Models\User::create([
+                'name' => $validated['nama_lengkap'],
+                'username' => $noHp,
+                'no_hp' => $noHp,
+                'email' => null,
+                'password' => \Illuminate\Support\Facades\Hash::make($password),
+                'role' => 'warga',
+            ]);
+
+            if (isset($kk) && $kk && !$kk->user_id) {
+                $kk->update(['user_id' => $newUser->id]);
             }
         }
 
@@ -216,17 +221,16 @@ class WargaController extends Controller
         $validated = $request->validate([
             'nama_lengkap' => 'required|string|max:255',
             'nik' => 'nullable|string|max:20|unique:wargas,nik,' . $warga->id,
-            'no_kk' => 'nullable|string|digits:16',
+            'no_kk' => 'nullable|string|max:20',
             'status_keluarga' => 'required|string|in:Kepala Keluarga,Istri,Anak,Famili Lain',
-            'nomor_rumah' => 'required|string|max:100',
+            'nomor_rumah' => 'nullable|string|max:100',
             'blok' => 'nullable|string|max:50',
-            'no_hp' => 'nullable|string|regex:/^[0-9]+$/|max:13',
+            'no_hp' => 'nullable|string|regex:/^[0-9]+$/|max:15',
             'status_tinggal' => 'required|in:tetap,kontrak',
         ], [
-            'nama_lengkap.required' => 'Nama kepala keluarga / lengkap wajib diisi.',
-            'no_kk.digits' => 'Nomor KK wajib berjumlah tepat 16 digit angka.',
-            'no_hp.regex' => 'Nomor WhatsApp hanya boleh berisi angka.',
-            'no_hp.max' => 'Nomor WhatsApp maksimal 13 digit angka.',
+            'nama_lengkap.required' => 'Nama lengkap wajib diisi.',
+            'no_hp.regex' => 'Nomor HP hanya boleh berisi angka.',
+            'no_hp.max' => 'Nomor HP maksimal 15 digit angka.',
         ]);
 
         if (empty($validated['blok']) && preg_match('/(Blok\s+[A-Za-z0-9]+)/i', $validated['nomor_rumah'], $match)) {
@@ -246,14 +250,61 @@ class WargaController extends Controller
     }
 
     /**
-     * Hapus Data Warga
+     * Hapus Data Warga secara Total (Hard Delete dengan Proteksi Riwayat Keuangan & Surat)
      */
     public function destroy($id)
     {
-        $warga = Warga::findOrFail($id);
-        $warga->delete();
+        DB::transaction(function () use ($id) {
+            $warga = Warga::findOrFail($id);
 
-        return redirect()->route('admin.warga.index')->with('success', 'Data warga berhasil dihapus.');
+            // 1. Lepas keterikatan foreign key pada transaksi keuangan dan surat (ON DELETE SET NULL protection)
+            IuranWarga::where('warga_id', $warga->id)->update(['warga_id' => null]);
+            KasRt::where('warga_id', $warga->id)->update(['warga_id' => null]);
+            Administrasi::where('warga_id', $warga->id)->update(['warga_id' => null]);
+            Pengaduan::where('warga_id', $warga->id)->update(['warga_id' => null]);
+
+            // 2. Hapus data anak terhubung
+            $warga->anaks()->delete();
+
+            // 3. Hapus akun User agar nomor HP dan username dapat didaftarkan kembali
+            $user = null;
+            if ($warga->user_id) {
+                $user = User::find($warga->user_id);
+            }
+            if (!$user && $warga->no_hp) {
+                $user = User::where('no_hp', $warga->no_hp)
+                    ->orWhere('username', $warga->no_hp)
+                    ->first();
+            }
+            if (!$user && $warga->nama_lengkap) {
+                $user = User::where('name', $warga->nama_lengkap)
+                    ->where('role', 'warga')
+                    ->first();
+            }
+
+            // 4. Hapus data Kartu Keluarga jika bersangkutan adalah pemilik/kepala keluarga
+            $kk = KartuKeluarga::where('warga_id', $warga->id)
+                ->orWhere('user_id', $user?->id)
+                ->orWhere(function ($q) use ($warga) {
+                    if (!empty($warga->no_kk)) {
+                        $q->where('nomor_kk', $warga->no_kk);
+                    }
+                })
+                ->first();
+
+            if ($kk) {
+                $kk->delete();
+            }
+
+            if ($user) {
+                $user->delete();
+            }
+
+            // 5. Hard delete warga
+            $warga->delete();
+        });
+
+        return redirect()->route('admin.warga.index')->with('success', 'Data warga dan akun terhubung berhasil dihapus secara total (hard delete). Riwayat keuangan & surat tetap tersimpan aman.');
     }
 
     /**

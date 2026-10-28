@@ -13,10 +13,14 @@ class Pengaduan extends Model
 
     protected $fillable = [
         'user_id',
+        'warga_id',
         'nomor_rumah',
         'nama_pelapor',
+        'nomor_whatsapp',
         'kategori',
         'judul_laporan',
+        'tujuan_surat',
+        'keterangan_detail',
         'isi_laporan',
         'foto',
         'status',

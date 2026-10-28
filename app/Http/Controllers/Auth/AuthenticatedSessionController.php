@@ -35,6 +35,10 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(route('admin.dashboard'));
         }
 
+        if ($user && $user->isWarga() && !$user->is_profile_complete) {
+            return redirect()->route('warga.onboarding');
+        }
+
         return redirect()->intended(route('warga.dashboard'));
     }
 

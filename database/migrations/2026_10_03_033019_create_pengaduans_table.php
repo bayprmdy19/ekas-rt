@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('nama_pelapor')->nullable(); // Nama warga (opsional, bisa anonim jika mau)
             $table->string('judul_laporan'); // Contoh: Lampu Jalan Blok A Mati / Sampah Belum Diangkut
             $table->text('isi_laporan'); // Detail keluhan atau pengaduan warga
-            $table->enum('status', ['pending', 'diproses', 'selesai'])->default('pending');
+            $table->string('status', 50)->default('diterima');
             $table->timestamps();
         });
     }

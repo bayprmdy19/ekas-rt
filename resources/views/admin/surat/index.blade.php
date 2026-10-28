@@ -1,26 +1,31 @@
 <x-admin-layout>
     @php
         $formattedSurats = $surats->map(function ($item) use ($wargaList) {
-            $warga = $wargaList->first(function($w) use ($item) {
+            $warga = $item->warga ?: ($item->warga_id ? null : $wargaList->first(function($w) use ($item) {
                 return strtolower($w->nama_lengkap) === strtolower($item->nama_pengaju) ||
                        strtolower($w->nomor_rumah) === strtolower($item->nomor_rumah);
-            });
+            }));
+
+            $namaPengajuDisplay = $item->warga ? $item->warga->nama_lengkap : ($item->warga_id === null ? 'Warga Telah Dihapus' : ($item->nama_pengaju ?: 'Warga Telah Dihapus'));
 
             return [
                 'id' => $item->id,
                 'nomor_surat' => $item->nomor_surat ?: $item->nomor_surat_display,
                 'tanggal' => $item->created_at ? $item->created_at->format('Y-m-d') : '-',
                 'tanggal_lengkap' => $item->created_at ? $item->created_at->translatedFormat('d F Y, H:i') . ' WIB' : '-',
-                'nama_pengaju' => $item->nama_pengaju ?: 'Warga (Anonim)',
+                'nama_pengaju' => $namaPengajuDisplay,
                 'nomor_rumah' => $item->nomor_rumah ?: '-',
+                'nomor_whatsapp' => $item->nomor_whatsapp ?: ($warga?->no_hp ?: '-'),
                 'jenis_surat' => $item->jenis_surat ?: 'Surat Pengantar RT',
+                'tujuan_surat' => $item->tujuan_surat ?: '-',
+                'keterangan_detail' => $item->keterangan_detail ?: '-',
                 'keperluan' => $item->keperluan ?: '-',
                 'status' => in_array(strtolower($item->status), ['disetujui', 'selesai']) ? 'disetujui' : (strtolower($item->status) === 'ditolak' ? 'ditolak' : 'menunggu'),
                 'status_label' => $item->status_label,
                 'catatan' => $item->catatan ?: '-',
                 'cetak_url' => route('admin.surat.cetak', $item->id),
                 'nik_pemohon' => $warga?->nik ?: '-',
-                'no_hp_pemohon' => $warga?->no_hp ?: '',
+                'no_hp_pemohon' => $item->nomor_whatsapp ?: ($warga?->no_hp ?: ''),
                 'blok_pemohon' => $warga?->blok ?: ($item->nomor_rumah ?: '-'),
                 'status_tinggal' => $warga?->status_tinggal ?: 'tetap',
             ];
@@ -224,7 +229,7 @@
                                 <!-- Tanggal -->
                                 <td class="py-3.5 px-4 text-slate-600 whitespace-nowrap" x-text="item.tanggal"></td>
 
-                                <!-- Nama Pemohon & Info Rumah -->
+                                <!-- Nama Pemohon & Info Rumah & WhatsApp -->
                                 <td class="py-3.5 px-4">
                                     <div class="flex items-center gap-2">
                                         <span class="font-bold text-slate-800" x-text="item.nama_pengaju"></span>
@@ -232,10 +237,21 @@
                                               class="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-800 border border-amber-200"
                                               x-text="item.nomor_rumah"></span>
                                     </div>
+                                    <div x-show="item.nomor_whatsapp && item.nomor_whatsapp !== '-'" class="text-[11px] text-emerald-600 font-medium flex items-center gap-1 mt-0.5">
+                                        <span>💬</span>
+                                        <a :href="'https://wa.me/' + item.nomor_whatsapp.replace(/[^0-9]/g, '')" target="_blank" class="hover:underline" x-text="item.nomor_whatsapp"></a>
+                                    </div>
                                 </td>
 
-                                <!-- Jenis Surat -->
-                                <td class="py-3.5 px-4 text-slate-700 font-semibold" x-text="item.jenis_surat"></td>
+                                <!-- Jenis Surat & Tujuan Khusus -->
+                                <td class="py-3.5 px-4 text-slate-700 font-semibold">
+                                    <span x-text="item.jenis_surat"></span>
+                                    <template x-if="item.tujuan_surat && item.tujuan_surat !== '-'">
+                                        <div class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 mt-1 inline-block">
+                                            Tujuan: <span x-text="item.tujuan_surat"></span>
+                                        </div>
+                                    </template>
+                                </td>
 
                                 <!-- Keperluan -->
                                 <td class="py-3.5 px-4 text-slate-600 max-w-xs truncate" :title="item.keperluan" x-text="item.keperluan"></td>

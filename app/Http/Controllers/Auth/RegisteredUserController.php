@@ -30,108 +30,91 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $isLegacyUsername = $request->filled('username') && !$request->filled('nomor_kk');
+        $isLegacy = $request->filled('username') && !$request->filled('no_hp') && !$request->filled('no_whatsapp');
 
-        $rules = [
-            'name' => ['required', 'string', 'max:255'],
-            'password' => [
-                'required',
-                'confirmed',
-                Rules\Password::min(8)->letters()->numbers(),
-            ],
-        ];
-
-        if ($isLegacyUsername) {
-            $rules['username'] = [
-                'required',
-                'string',
-                'alpha_dash',
-                'min:3',
-                'max:30',
-                'unique:'.User::class,
+        if ($isLegacy) {
+            $rules = [
+                'name' => ['required', 'string', 'max:255'],
+                'username' => [
+                    'required',
+                    'string',
+                    'alpha_dash',
+                    'min:3',
+                    'max:30',
+                    'unique:'.User::class,
+                ],
+                'email' => ['nullable', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+                'password' => [
+                    'required',
+                    'confirmed',
+                    Rules\Password::min(8)->letters()->numbers(),
+                ],
             ];
-            $rules['email'] = ['nullable', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class];
+            $request->validate($rules);
+            $loginId = strtolower($request->username);
+            $noHp = null;
         } else {
-            $rules['nomor_kk'] = [
-                'required',
-                'string',
-                'digits:16',
-                'unique:users,username',
-            ];
-            $rules['no_whatsapp'] = [
-                'required',
-                'string',
-                'regex:/^[0-9]+$/',
-                'max:13',
-            ];
+            $noHp = trim((string) ($request->input('no_hp') ?: $request->input('no_whatsapp')));
+            $request->merge(['no_hp' => $noHp]);
+
+            $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'no_hp' => [
+                    'required',
+                    'string',
+                    'regex:/^[0-9]+$/',
+                    'min:9',
+                    'max:15',
+                    'unique:users,username',
+                ],
+                'password' => [
+                    'required',
+                    'confirmed',
+                    Rules\Password::min(8)->letters()->numbers(),
+                ],
+            ], [
+                'name.required' => 'Nama lengkap wajib diisi.',
+                'no_hp.required' => 'Nomor HP wajib diisi.',
+                'no_hp.regex' => 'Nomor HP hanya boleh berisi angka.',
+                'no_hp.min' => 'Nomor HP minimal 9 digit angka.',
+                'no_hp.max' => 'Nomor HP maksimal 15 digit angka.',
+                'no_hp.unique' => 'Nomor HP ini sudah terdaftar, silakan gunakan untuk masuk ke portal.',
+                'password.required' => 'Password wajib diisi.',
+                'password.confirmed' => 'Konfirmasi password tidak cocok.',
+                'password.min' => 'Password minimal 8 karakter.',
+                'password' => 'Password wajib berupa kombinasi huruf dan angka, minimal 8 karakter.',
+            ]);
+
+            $loginId = $noHp;
         }
-
-        $request->validate($rules, [
-            'name.required' => 'Nama kepala keluarga wajib diisi.',
-            'nomor_kk.required' => 'Nomor KK wajib diisi.',
-            'nomor_kk.digits' => 'Nomor KK wajib berjumlah tepat 16 digit angka.',
-            'nomor_kk.regex' => 'Nomor KK hanya boleh berisi angka.',
-            'nomor_kk.max' => 'Nomor KK maksimal 16 digit angka.',
-            'nomor_kk.unique' => 'Nomor KK ini sudah terdaftar, silakan gunakan akun yang sudah ada.',
-            'no_whatsapp.required' => 'Nomor WhatsApp wajib diisi.',
-            'no_whatsapp.regex' => 'Nomor WhatsApp hanya boleh berisi angka.',
-            'no_whatsapp.max' => 'Nomor WhatsApp maksimal 13 digit angka.',
-            'username.required' => 'Username wajib diisi.',
-            'username.unique' => 'Username ini sudah digunakan, silakan pilih yang lain.',
-            'username.alpha_dash' => 'Username hanya boleh berisi karakter huruf, angka, dan garis bawah tanpa spasi.',
-            'username.min' => 'Username minimal 3 karakter.',
-            'email.email' => 'Format alamat email tidak valid.',
-            'email.unique' => 'Email sudah terdaftar dalam sistem.',
-            'password.required' => 'Password wajib diisi.',
-            'password.confirmed' => 'Konfirmasi password tidak cocok.',
-            'password.min' => 'Password minimal 8 karakter.',
-            'password' => 'Password wajib berupa kombinasi huruf dan angka, minimal 8 karakter.',
-        ]);
-
-        $username = $isLegacyUsername ? strtolower($request->username) : trim($request->nomor_kk);
 
         $user = User::create([
             'name' => $request->name,
-            'username' => $username,
+            'username' => $loginId,
+            'no_hp' => $noHp,
             'email' => $request->email ?: null,
             'password' => Hash::make($request->password),
             'role' => 'warga',
         ]);
 
-        if (! $isLegacyUsername) {
-            $nomorKk = trim($request->nomor_kk);
-            $noWhatsapp = trim($request->no_whatsapp);
-
-            $warga = \App\Models\Warga::where('no_kk', $nomorKk)
+        if ($noHp) {
+            $warga = \App\Models\Warga::where('no_hp', $noHp)
                 ->orWhere('nama_lengkap', $request->name)
                 ->first();
 
             if ($warga) {
                 $warga->update([
-                    'no_kk' => $nomorKk,
-                    'no_hp' => $noWhatsapp,
+                    'nama_lengkap' => $request->name,
+                    'no_hp' => $noHp,
                 ]);
             } else {
-                $warga = \App\Models\Warga::create([
+                \App\Models\Warga::create([
                     'nama_lengkap' => $request->name,
-                    'no_kk' => $nomorKk,
-                    'no_hp' => $noWhatsapp,
-                    'nomor_rumah' => '-',
+                    'no_hp' => $noHp,
+                    'no_kk' => null,
+                    'nomor_rumah' => null,
                     'status_keluarga' => 'Kepala Keluarga',
                     'status_tinggal' => 'tetap',
-                ]);
-            }
-
-            $kk = \App\Models\KartuKeluarga::where('nomor_kk', $nomorKk)
-                ->orWhere('kepala_keluarga', $request->name)
-                ->first();
-
-            if ($kk) {
-                $kk->update([
-                    'user_id' => $user->id,
-                    'warga_id' => $kk->warga_id ?: $warga->id,
-                    'nomor_kk' => $nomorKk,
-                    'no_hp' => $noWhatsapp,
                 ]);
             }
         }
@@ -140,6 +123,6 @@ class RegisteredUserController extends Controller
 
         Auth::login($user);
 
-        return redirect()->intended(route('warga.dashboard'));
+        return redirect()->route('warga.onboarding');
     }
 }

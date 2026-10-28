@@ -43,6 +43,11 @@ class KartuKeluarga extends Model
         return $this->belongsTo(Warga::class);
     }
 
+    public function anaks(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(WargaAnak::class, 'kartu_keluarga_id');
+    }
+
     public function isLengkap(): bool
     {
         return !empty($this->foto_kk) && !empty($this->foto_ktp) && !empty($this->foto_bpjs);

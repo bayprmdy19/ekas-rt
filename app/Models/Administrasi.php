@@ -12,10 +12,14 @@ class Administrasi extends Model
 
     protected $fillable = [
         'user_id',
+        'warga_id',
         'nomor_surat',
         'nomor_rumah',
         'nama_pengaju',
+        'nomor_whatsapp',
         'jenis_surat',
+        'tujuan_surat',
+        'keterangan_detail',
         'keperluan',
         'status',
         'catatan',
@@ -27,6 +31,14 @@ class Administrasi extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Relasi ke model Warga (ON DELETE SET NULL)
+     */
+    public function warga(): BelongsTo
+    {
+        return $this->belongsTo(Warga::class);
     }
 
     /**

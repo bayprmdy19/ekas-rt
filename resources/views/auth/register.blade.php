@@ -77,9 +77,9 @@
                 <form method="POST" action="{{ route('register') }}" class="space-y-4">
                     @csrf
 
-                    <!-- Nama Kepala Keluarga -->
+                    <!-- Nama Lengkap -->
                     <div>
-                        <label for="name" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Kepala Keluarga</label>
+                        <label for="name" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nama Lengkap</label>
                         <input id="name" type="text" name="name" value="{{ old('name') }}" required autofocus autocomplete="name"
                             placeholder="Contoh: Budi Santoso"
                             class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('name') border-rose-500 bg-rose-50 @enderror">
@@ -88,29 +88,15 @@
                         @enderror
                     </div>
 
-                    <!-- Nomor KK -->
+                    <!-- Nomor HP -->
                     <div>
-                        <label for="nomor_kk" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor KK</label>
-                        <input id="nomor_kk" type="text" inputmode="numeric" pattern="[0-9]{16}" minlength="16" maxlength="16"
-                            title="Nomor KK harus berjumlah tepat 16 digit angka"
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 16)"
-                            name="nomor_kk" value="{{ old('nomor_kk') }}" required autocomplete="off"
-                            placeholder="Contoh: 12910239123"
-                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('nomor_kk') border-rose-500 bg-rose-50 @enderror">
-                        @error('nomor_kk')
-                            <span class="text-[11px] text-rose-500 mt-1.5 block font-medium">{{ $message }}</span>
-                        @enderror
-                    </div>
-
-                    <!-- Nomor WhatsApp -->
-                    <div>
-                        <label for="no_whatsapp" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor WhatsApp</label>
-                        <input id="no_whatsapp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="13"
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 13)"
-                            name="no_whatsapp" value="{{ old('no_whatsapp') }}" required autocomplete="tel"
+                        <label for="no_hp" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor HP</label>
+                        <input id="no_hp" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="15"
+                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0, 15)"
+                            name="no_hp" value="{{ old('no_hp') }}" required autocomplete="tel"
                             placeholder="Contoh: 081234567890"
-                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('no_whatsapp') border-rose-500 bg-rose-50 @enderror">
-                        @error('no_whatsapp')
+                            class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @error('no_hp') border-rose-500 bg-rose-50 @enderror">
+                        @error('no_hp')
                             <span class="text-[11px] text-rose-500 mt-1.5 block font-medium">{{ $message }}</span>
                         @enderror
                     </div>

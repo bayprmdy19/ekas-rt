@@ -317,7 +317,7 @@
                     <div class="space-y-3 max-h-[380px] overflow-y-auto pr-1">
                         @forelse ($daftarTagihan as $tagihan)
                             @php
-                                $wargaName = $tagihan->warga->nama_lengkap ?? 'Warga RT';
+                                $wargaName = $tagihan->warga ? $tagihan->warga->nama_lengkap : 'Warga Telah Dihapus';
                                 $subKeterangan = $tagihan->jenis_iuran . ($tagihan->keterangan ? ' • ' . $tagihan->keterangan : ' • ' . $tagihan->bulan_tahun);
                                 $isLunas = $tagihan->status === 'lunas';
                                 $tahunTagihan = substr($tagihan->bulan_tahun, 0, 4);

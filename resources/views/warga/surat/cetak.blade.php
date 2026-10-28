@@ -121,6 +121,27 @@
                         <td class="py-1.5">:</td>
                         <td class="py-1.5 font-bold text-blue-900 uppercase underline">{{ $pengaduan->judul_laporan }}</td>
                     </tr>
+                    @if(!empty($pengaduan->tujuan_surat))
+                    <tr class="align-top">
+                        <td class="py-1.5 font-bold">Tujuan Surat</td>
+                        <td class="py-1.5">:</td>
+                        <td class="py-1.5 font-bold text-slate-900">{{ $pengaduan->tujuan_surat }}</td>
+                    </tr>
+                    @endif
+                    @if(!empty($pengaduan->keterangan_detail))
+                    <tr class="align-top">
+                        <td class="py-1.5 font-bold">Keterangan Detail</td>
+                        <td class="py-1.5">:</td>
+                        <td class="py-1.5 text-slate-800">{{ $pengaduan->keterangan_detail }}</td>
+                    </tr>
+                    @endif
+                    @if(!empty($pengaduan->nomor_whatsapp))
+                    <tr class="align-top">
+                        <td class="py-1.5 font-bold">Kontak / WhatsApp</td>
+                        <td class="py-1.5">:</td>
+                        <td class="py-1.5 text-slate-800 font-medium">{{ $pengaduan->nomor_whatsapp }}</td>
+                    </tr>
+                    @endif
                     <tr class="align-top">
                         <td class="py-1.5 font-bold">Keterangan Tambahan</td>
                         <td class="py-1.5">:</td>

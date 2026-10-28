@@ -5,6 +5,7 @@ use App\Http\Controllers\IuranController;
 use App\Http\Controllers\KartuKeluargaController;
 use App\Http\Controllers\KasKeluarController;
 use App\Http\Controllers\KasMasukController;
+use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\PembayaranController;
 use App\Http\Controllers\PengaduanController;
 use App\Http\Controllers\ProfileController;
@@ -30,7 +31,7 @@ Route::get('/', [PublicDashboardController::class, 'index'])->name('public.dashb
 Route::post('/layanan-warga', [PublicDashboardController::class, 'storeLayanan'])->name('layanan.warga');
 
 // Route Dashboard Multi-Role (Pengurus RT & Warga)
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'profile.complete'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
     Route::get('/admin/realtime-stats', [DashboardController::class, 'realtimeStats'])->name('admin.realtime-stats');
@@ -103,6 +104,11 @@ Route::middleware(['auth'])->group(function () {
     // Route Kelengkapan Dokumen & Data Diri Warga
     Route::get('/warga/dokumen', [WargaDokumenController::class, 'index'])->name('warga.dokumen.index');
     Route::post('/warga/dokumen', [WargaDokumenController::class, 'store'])->name('warga.dokumen.store');
+
+    // Route Onboarding Warga Baru
+    Route::get('/warga/onboarding', [OnboardingController::class, 'index'])->name('warga.onboarding');
+    Route::post('/warga/onboarding', [OnboardingController::class, 'store'])->name('warga.onboarding.store');
+    Route::get('/warga/dokumen-private/{type}', [OnboardingController::class, 'downloadDokumen'])->name('warga.dokumen.download-private');
 });
 
 // Route Manajemen Profil Admin (Bawaan Laravel Breeze)

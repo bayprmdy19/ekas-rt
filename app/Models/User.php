@@ -20,9 +20,12 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'username',
+        'no_hp',
+        'no_kk',
         'email',
         'password',
         'role',
+        'is_profile_complete',
     ];
 
     /**
@@ -39,6 +42,14 @@ class User extends Authenticatable
     public function isWarga(): bool
     {
         return $this->role === 'warga';
+    }
+
+    /**
+     * Data Profil Warga Terhubung
+     */
+    public function warga(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(Warga::class);
     }
 
     /**
@@ -67,5 +78,6 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'is_profile_complete' => 'boolean',
     ];
 }

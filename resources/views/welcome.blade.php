@@ -204,13 +204,13 @@
                     @endif
 
                     <!-- Form Terhubung ke Route layanan.warga -->
-                    <form action="{{ route('layanan.warga') }}" method="POST" class="space-y-5" x-data="{ submitting: false }" @submit="submitting = true">
+                    <form action="{{ route('layanan.warga') }}" method="POST" class="space-y-5" x-data="{ submitting: false, kategoriLayanan: '{{ old('kategori_layanan', '') }}' }" @submit="submitting = true">
                         @csrf
 
                         <!-- Pilihan Jenis Layanan (Kategori Utama) -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Kategori Layanan <span class="text-rose-500">*</span></label>
-                            <select name="kategori_layanan" class="w-full text-xs font-semibold rounded-2xl border-slate-200 p-3.5 focus:border-blue-600 focus:ring-blue-600 bg-slate-50 text-slate-800" required>
+                            <select name="kategori_layanan" x-model="kategoriLayanan" class="w-full text-xs font-semibold rounded-2xl border-slate-200 p-3.5 focus:border-blue-600 focus:ring-blue-600 bg-slate-50 text-slate-800" required>
                                 <option value="">-- Pilih Jenis Layanan --</option>
                                 <optgroup label="── 📣 PENGADUAN LINGKUNGAN">
                                     <option value="Lapor Fasilitas Publik / Lampu Jalan Rusak" {{ old('kategori_layanan') == 'Lapor Fasilitas Publik / Lampu Jalan Rusak' ? 'selected' : '' }}>Lapor Fasilitas Publik / Lampu Jalan Rusak</option>
@@ -222,26 +222,85 @@
                                     <option value="Surat Keterangan Domisili" {{ old('kategori_layanan') == 'Surat Keterangan Domisili' ? 'selected' : '' }}>Surat Keterangan Domisili</option>
                                     <option value="Surat Keterangan Usaha (SKU)" {{ old('kategori_layanan') == 'Surat Keterangan Usaha (SKU)' ? 'selected' : '' }}>Surat Keterangan Usaha (SKU)</option>
                                     <option value="Surat Pengantar Nikah" {{ old('kategori_layanan') == 'Surat Pengantar Nikah' ? 'selected' : '' }}>Surat Pengantar Nikah</option>
+                                    <option value="Lain-lain" {{ old('kategori_layanan') == 'Lain-lain' ? 'selected' : '' }}>Lain-lain (Kebutuhan Khusus / Lainnya)</option>
                                 </optgroup>
                             </select>
                         </div>
 
-                        <!-- Grid No Rumah & Nama -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nomor Rumah / Blok <span class="text-rose-500">*</span></label>
-                                <input type="text" name="nomor_rumah" value="{{ old('nomor_rumah') }}" placeholder="Contoh: Blok A No. 12" class="w-full text-xs rounded-2xl border-slate-200 p-3 focus:border-blue-600 focus:ring-blue-600 bg-slate-50" required>
+                        <!-- Form Dinamis Khusus Opsi 'Lain-lain' (Tujuan Surat & Keterangan Detail) -->
+                        <div x-show="kategoriLayanan === 'Lain-lain'" x-cloak class="space-y-4 p-4.5 rounded-2xl bg-amber-50/80 border border-amber-200/90 transition">
+                            <div class="flex items-center gap-2 text-amber-800 text-xs font-bold">
+                                <span>📌</span>
+                                <span>Detail Pengajuan Surat Khusus (Lain-lain)</span>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nama Pemohon / Pelapor</label>
-                                <input type="text" name="nama_pemohon" value="{{ old('nama_pemohon') }}" placeholder="Kosongkan jika ingin anonim" class="w-full text-xs rounded-2xl border-slate-200 p-3 focus:border-blue-600 focus:ring-blue-600 bg-slate-50">
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                    Tujuan Surat <span class="text-rose-500">*</span>
+                                </label>
+                                <input type="text" name="tujuan_surat" :required="kategoriLayanan === 'Lain-lain'" value="{{ old('tujuan_surat') }}" placeholder="Contoh: Ke Bank BCA / Pengajuan KPR / Beasiswa" class="w-full text-xs rounded-2xl border-slate-200 p-3 focus:border-amber-600 focus:ring-amber-600 bg-white">
+                                <span class="text-[11px] text-slate-500 mt-1 block">Tuliskan instansi, lembaga, atau pihak tujuan penyerahan surat.</span>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                                    Keterangan Detail <span class="text-rose-500">*</span>
+                                </label>
+                                <textarea name="keterangan_detail" :required="kategoriLayanan === 'Lain-lain'" rows="3" placeholder="Tuliskan alasan lengkap atau rincian spesifik surat yang Anda butuhkan..." class="w-full text-xs rounded-2xl border-slate-200 p-3.5 focus:border-amber-600 focus:ring-amber-600 bg-white">{{ old('keterangan_detail') }}</textarea>
                             </div>
                         </div>
 
-                        <!-- Deskripsi Laporan / Keperluan -->
-                        <div>
+                        <!-- Data Diri Pemohon (Kondisi Auth vs Guest) -->
+                        @auth
+                            @php
+                                $currentUser = auth()->user();
+                                $currentWarga = $currentUser->warga ?: \App\Models\Warga::where('user_id', $currentUser->id)->orWhere('no_hp', $currentUser->no_hp)->orWhere('nama_lengkap', $currentUser->name)->first();
+                                $namaAuto = $currentWarga?->nama_lengkap ?? $currentUser->name;
+                                $rumahAuto = $currentWarga?->nomor_rumah ?? ($currentUser->kartuKeluarga?->nomor_rumah ?? '-');
+                                $waAuto = $currentUser->no_hp ?? ($currentWarga?->no_hp ?? $currentUser->username);
+                            @endphp
+
+                            <div class="p-3 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between text-xs text-blue-800">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-emerald-600 font-bold">✓</span>
+                                    <span>Akun Terverifikasi: <strong>{{ $namaAuto }}</strong> (Data diri otomatis terisi)</span>
+                                </div>
+                                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-700">Warga Login</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nama Pemohon / Pelapor</label>
+                                    <input type="text" name="nama_pemohon" value="{{ $namaAuto }}" readonly class="w-full text-xs rounded-2xl border-slate-200 p-3 bg-slate-100 text-slate-600 font-semibold cursor-not-allowed">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nomor Rumah / Blok</label>
+                                    <input type="text" name="nomor_rumah" value="{{ $rumahAuto }}" readonly class="w-full text-xs rounded-2xl border-slate-200 p-3 bg-slate-100 text-slate-600 font-semibold cursor-not-allowed">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nomor WhatsApp</label>
+                                    <input type="text" name="nomor_whatsapp" value="{{ $waAuto }}" readonly class="w-full text-xs rounded-2xl border-slate-200 p-3 bg-slate-100 text-slate-600 font-semibold cursor-not-allowed">
+                                </div>
+                            </div>
+                        @else
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nama Pemohon / Pelapor <span class="text-rose-500">*</span></label>
+                                    <input type="text" name="nama_pemohon" value="{{ old('nama_pemohon') }}" placeholder="Nama lengkap Anda" class="w-full text-xs rounded-2xl border-slate-200 p-3 focus:border-blue-600 focus:ring-blue-600 bg-slate-50" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nomor Rumah / Blok <span class="text-rose-500">*</span></label>
+                                    <input type="text" name="nomor_rumah" value="{{ old('nomor_rumah') }}" placeholder="Contoh: Blok A No. 12" class="w-full text-xs rounded-2xl border-slate-200 p-3 focus:border-blue-600 focus:ring-blue-600 bg-slate-50" required>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Nomor WhatsApp <span class="text-rose-500">*</span></label>
+                                    <input type="tel" name="nomor_whatsapp" value="{{ old('nomor_whatsapp') }}" inputmode="numeric" maxlength="15" placeholder="Contoh: 081234567890" class="w-full text-xs rounded-2xl border-slate-200 p-3 focus:border-blue-600 focus:ring-blue-600 bg-slate-50" required>
+                                </div>
+                            </div>
+                        @endauth
+
+                        <!-- Deskripsi Laporan / Keperluan (Untuk selain Lain-lain) -->
+                        <div x-show="kategoriLayanan !== 'Lain-lain'">
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Deskripsi Laporan / Keperluan <span class="text-rose-500">*</span></label>
-                            <textarea name="deskripsi" rows="4" placeholder="Tuliskan situasi atau detail pengajuan Anda secara jelas agar pengurus RT bisa membantu dengan lebih tepat." class="w-full text-xs rounded-2xl border-slate-200 p-3.5 focus:border-blue-600 focus:ring-blue-600 bg-slate-50" required>{{ old('deskripsi') }}</textarea>
+                            <textarea name="deskripsi" :required="kategoriLayanan !== 'Lain-lain'" rows="4" placeholder="Tuliskan situasi atau detail pengajuan Anda secara jelas agar pengurus RT bisa membantu dengan lebih tepat." class="w-full text-xs rounded-2xl border-slate-200 p-3.5 focus:border-blue-600 focus:ring-blue-600 bg-slate-50">{{ old('deskripsi') }}</textarea>
                         </div>
 
                         <!-- Tombol Submit -->

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('iuran_wargas', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('warga_id')->constrained('wargas')->onDelete('cascade'); // Terhubung ke warga
+            $table->foreignId('warga_id')->nullable()->constrained('wargas')->nullOnDelete(); // Terhubung ke warga (ON DELETE SET NULL)
             $table->enum('jenis_iuran', ['bulanan', 'sampah', 'ronda']); // Jenis tagihan iuran
             $table->string('bulan_tahun'); // Contoh format: '2026-10' (Oktober 2026)
             $table->decimal('jumlah', 12, 2); // Nominal iuran (contoh: 25000.00)

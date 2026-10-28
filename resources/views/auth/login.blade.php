@@ -61,7 +61,7 @@
                 <div>
                     <h3 class="text-2xl font-extrabold text-slate-900 tracking-tight">Masuk Portal</h3>
                     <p class="text-xs text-slate-500 mt-1.5 leading-relaxed">
-                        Gunakan Nomor KK atau Nomor WhatsApp yang telah terdaftar untuk melanjutkan.
+                        Gunakan Nomor HP yang telah terdaftar untuk melanjutkan.
                     </p>
                 </div>
 
@@ -75,11 +75,11 @@
                 <form method="POST" action="{{ route('login') }}" class="space-y-4">
                     @csrf
 
-                    <!-- Field Nomor KK / Nomor WhatsApp -->
+                    <!-- Field Nomor HP / Nomor KK -->
                     <div>
-                        <label for="login" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor KK atau Nomor WhatsApp</label>
+                        <label for="login" class="block text-xs font-bold text-slate-700 uppercase mb-1.5">Nomor HP atau Nomor KK</label>
                         <input id="login" type="text" name="login" value="{{ old('login') ?? old('email') }}" required autofocus autocomplete="username"
-                            placeholder="Contoh: 1291023912345678 atau 081234567890"
+                            placeholder="Contoh: 081234567890 atau 16 digit No. KK"
                             class="w-full text-xs border border-slate-200 rounded-xl p-3.5 bg-slate-50 placeholder:text-slate-400/60 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition @if($errors->has('login') || $errors->has('email')) border-rose-500 bg-rose-50 @endif">
                         @if ($errors->has('login'))
                             <span class="text-[11px] text-rose-500 mt-1.5 block font-medium">{{ $errors->first('login') }}</span>

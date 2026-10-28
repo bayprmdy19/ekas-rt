@@ -12,4 +12,9 @@ class KasRt extends Model
     protected $table = 'kas_rts';
 
     protected $guarded = [];
+
+    public function warga(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(Warga::class);
+    }
 }
