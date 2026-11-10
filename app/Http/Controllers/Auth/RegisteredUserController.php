@@ -104,11 +104,13 @@ class RegisteredUserController extends Controller
 
             if ($warga) {
                 $warga->update([
+                    'user_id' => $user->id,
                     'nama_lengkap' => $request->name,
                     'no_hp' => $noHp,
                 ]);
             } else {
                 \App\Models\Warga::create([
+                    'user_id' => $user->id,
                     'nama_lengkap' => $request->name,
                     'no_hp' => $noHp,
                     'no_kk' => null,
